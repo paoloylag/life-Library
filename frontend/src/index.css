@@ -172,3 +172,47 @@
   .display-date {max-width: 520px; margin-left: auto; margin-right: auto;}
   .display-qr {width: min(100%, 52dvh, 540px); margin: 0 auto;}
 }
+
+/* iPhone 17 target: 402 x 874 CSS pixels at 3x scale */
+.scan-page {
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  overflow-x: hidden;
+}
+.scan-page > header,
+.scan-card {width: min(402px, 100%);}
+.scan-card {align-self: start; margin: 14px auto; padding: 22px 18px;}
+.account-select select,
+.scan-form input,
+.scan-form select {font-size: 16px;}
+
+@media (max-width: 430px) {
+  .scan-page > header {min-height: 48px;}
+  .scan-page > header > button {width: 44px; height: 44px;}
+  .scan-brand {gap: 7px;}
+  .scan-brand img {width: 32px; height: 40px;}
+  .scan-brand strong {font-size: 17px;}
+  .scan-card {
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(24,28,34,.08);
+  }
+  .scan-heading h1,
+  .scan-state h1,
+  .scan-success h1 {font-size: clamp(34px, 9.5vw, 40px);}
+  .scan-heading p,
+  .scan-state p,
+  .scan-success > p {font-size: 13px;}
+  .type-tabs {gap: 8px; margin: 20px 0 18px;}
+  .type-tabs button {min-height: 64px;}
+  .demo-notice {padding: 10px;}
+  .account-select {margin: 14px 0;}
+  .identity-card {padding: 11px;}
+  .scan-primary {margin-top: 14px;}
+  .scan-state-icon,
+  .success-mark {width: 64px; height: 64px; margin-bottom: 14px;}
+  .scan-success .identity-card {margin: 18px 0 14px;}
+  .scan-success dl {margin-bottom: 14px;}
+  .scan-success dl > div {padding: 9px 12px;}
+  .scan-page > footer {padding-top: 2px; padding-bottom: env(safe-area-inset-bottom);}
+}
