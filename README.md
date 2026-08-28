@@ -2,6 +2,8 @@
 
 Independent FastAPI + React implementation. The `lifetrack-l12` repository is reference-only.
 
+See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architecture, implementation status, routes, deployment model, and MVP priorities.
+
 ## Local setup
 
 1. Copy `.env.example` to `.env` and configure Google OAuth.
