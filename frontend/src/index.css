@@ -125,3 +125,50 @@
     justify-self: center;
   }
 }
+
+/* Default presentation canvases: iPad display and mobile scan flow */
+.student-display > header,
+.display-card {
+  width: min(1024px, 100%);
+  max-width: 1024px;
+}
+.display-card {
+  grid-template-columns: minmax(250px, .78fr) minmax(0, 1fr);
+  min-height: min(calc(100dvh - 180px), 640px);
+  gap: 22px;
+  padding: 28px;
+}
+.display-copy h1 {font-size: clamp(44px, 5.2vw, 58px);}
+.display-copy p {font-size: 17px; line-height: 1.42;}
+.display-date {margin-top: 18px; padding-top: 13px; font-size: 14px;}
+.display-qr {width: min(100%, 540px); justify-self: center; padding: 18px;}
+
+.scan-page > header,
+.scan-card {width: min(430px, 100%);}
+.scan-page {padding: 14px;}
+.scan-card {margin: 18px auto; padding: 24px 20px;}
+.type-tabs {grid-template-columns: repeat(2, minmax(0, 1fr));}
+.type-tabs button {min-height: 68px; font-size: 11px;}
+.account-select select,
+.scan-form input,
+.scan-form select,
+.scan-primary,
+.scan-secondary {min-height: 48px;}
+.scan-success dl {grid-template-columns: 1fr;}
+.scan-success dl > div,
+.scan-success dl > div:nth-child(odd) {border-right: 0;}
+.scan-success dl > div.wide {grid-column: 1;}
+.scan-success dl > div:last-child {border-bottom: 0;}
+
+@media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+  .display-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: calc(100dvh - 132px);
+  }
+  .display-copy {text-align: center;}
+  .display-copy h1,
+  .display-copy p {margin-left: auto; margin-right: auto;}
+  .display-date {max-width: 520px; margin-left: auto; margin-right: auto;}
+  .display-qr {width: min(100%, 52dvh, 540px); margin: 0 auto;}
+}
