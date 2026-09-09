@@ -22,7 +22,7 @@ const visits=[
  {id:5,name:'Mika Santos',number:'2025-00288',timeIn:'7:10 AM'},
 ]
 const navigation=[
- {label:'Library',items:[{label:'Dashboard',path:'/',icon:LayoutDashboard},{label:'Attendance',path:'/attendance',icon:Clock3},{label:'Students',path:'/students',icon:Users},{label:'Reports',path:'/reports',icon:BarChart3}]},
+ {label:'Library',items:[{label:'Dashboard',path:'/',icon:LayoutDashboard},{label:'Attendance',path:'/attendance',icon:Clock3},{label:'Library Users',path:'/students',icon:Users},{label:'Reports',path:'/reports',icon:BarChart3}]},
  {label:'Administration',items:[{label:'Settings',path:'/settings',icon:Settings}]},
 ]
 function App(){
