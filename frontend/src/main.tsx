@@ -11,17 +11,20 @@ import {loadSettings} from './settings'
 import './index.css'
 
 const BASE=import.meta.env.BASE_URL
+const PUBLIC_APP_URL=(import.meta.env.VITE_PUBLIC_APP_URL||'').replace(/\/$/,'')
 const currentPath=()=>{const path=location.pathname;const base=BASE.endsWith('/')?BASE.slice(0,-1):BASE;return base&&path.startsWith(base)?path.slice(base.length)||'/':path}
 const href=(path:string)=>BASE+(path==='/'?'':path.replace(/^\//,''))
+const publicHref=(path:string)=>PUBLIC_APP_URL+('/'+path.replace(/^\//,''))
 
 type DailyQr={date:string;url:string;expiresAt:number}
 const localDay=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function createDailyQr(force=false):DailyQr{
  const date=localDay(),storedDate=localStorage.getItem('qr-date'),storedUrl=localStorage.getItem('qr'),storedExpiry=Number(localStorage.getItem('qr-expires')||0)
- if(!force&&storedDate===date&&storedUrl&&storedExpiry>Date.now())return{date,url:storedUrl,expiresAt:storedExpiry}
+ const expectedOrigin=PUBLIC_APP_URL||location.origin
+ if(!force&&storedDate===date&&storedUrl&&storedUrl.startsWith(expectedOrigin+'/')&&storedExpiry>Date.now())return{date,url:storedUrl,expiresAt:storedExpiry}
  const midnight=new Date();midnight.setHours(24,0,0,0)
  const expiresAt=midnight.getTime(),token=`daily-${date}-${crypto.randomUUID()}`
- const url=location.origin+href(`/scan/${token}?expires=${expiresAt}`)
+ const url=PUBLIC_APP_URL?publicHref(`/scan/${token}?expires=${expiresAt}`):location.origin+href(`/scan/${token}?expires=${expiresAt}`)
  localStorage.setItem('qr',url);localStorage.setItem('qr-date',date);localStorage.setItem('qr-expires',String(expiresAt))
  dispatchEvent(new Event('daily-qr-changed'))
  return{date,url,expiresAt}

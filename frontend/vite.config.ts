@@ -5,5 +5,5 @@ import tailwind from '@tailwindcss/vite';
 export default defineConfig({
   base: '/life-Library/',
   plugins: [react(), tailwind()],
-  server: {proxy: {'/api': 'http://localhost:8000'}},
+  server: {host: true, proxy: {'/api': 'http://localhost:8000'}},
 })
