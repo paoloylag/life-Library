@@ -162,7 +162,8 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Persistent PostgreSQL attendance | Backend scaffold; frontend integration pending |
 | Librarian login screen/session enforcement | Backend scaffold; UI currently intentionally bypassed |
 | Google SSO check-in | Backend scaffold; credentials and frontend integration pending |
-| Production QR token flow | Backend scaffold; frontend currently uses a demonstration token |
+| Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
+| Production QR token validation | Backend scaffold; frontend currently generates the daily token in-browser |
 | Server-backed settings | Pending |
 | Deployment of API/database | Pending |
 | Automated backend tests and migrations | Pending |
@@ -183,7 +184,7 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 ## Operating Rules
 
 - A visit is a check-in event; there is no check-out workflow.
-- QR codes are session-bound and expire according to configured policy.
+- The prototype automatically rotates its QR code at local midnight; production QR codes must be issued and validated by the backend.
 - School Google authentication identifies QR users; librarian authentication remains credential-based.
 - Manual entries must retain source, librarian, date/time, and adjustment reason for auditability.
 - Duplicate-scan protection must be enforced by the backend.
@@ -207,4 +208,3 @@ pnpm dev
 - Frontend: `http://localhost:5173`
 - API documentation: `http://localhost:8000/docs`
 - API health: `http://localhost:8000/api/health`
-
