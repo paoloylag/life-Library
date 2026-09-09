@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
-    google_allowed_domain: str = "laicollege.edu.ph"
+    google_allowed_domain: str = "life.edu.ph"
     frontend_url: str = "http://localhost:5173/life-Library"
     cookie_secure: bool = False
     cookie_samesite: Literal["lax", "none", "strict"] = "lax"
