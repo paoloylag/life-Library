@@ -14,7 +14,7 @@ class Librarian(Base):
 class User(Base):
     __tablename__="users"
     id:Mapped[int]=mapped_column(primary_key=True); email:Mapped[str]=mapped_column(String(255),unique=True,index=True)
-    name:Mapped[str]=mapped_column(String(255)); google_id:Mapped[str]=mapped_column(String(255),unique=True)
+    name:Mapped[str]=mapped_column(String(255)); google_id:Mapped[str|None]=mapped_column(String(255),unique=True,nullable=True)
     avatar_url:Mapped[str|None]=mapped_column(String(500)); role:Mapped[str]=mapped_column(String(30),default="student")
     is_active:Mapped[bool]=mapped_column(Boolean,default=True)
     profile:Mapped["StudentProfile|None"]=relationship(back_populates="user",uselist=False)
@@ -40,7 +40,3 @@ class LibraryVisit(Base):
     status:Mapped[str]=mapped_column(String(30),default="checked_in",index=True)
     source:Mapped[str]=mapped_column(String(20),default="qr"); adjusted_by:Mapped[int|None]=mapped_column(ForeignKey("librarians.id")); adjustment_note:Mapped[str|None]=mapped_column(Text)
     student:Mapped[StudentProfile]=relationship(); session:Mapped[LibrarySession]=relationship()
-
-
-
-

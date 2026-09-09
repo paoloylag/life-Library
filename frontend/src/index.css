@@ -240,3 +240,30 @@
 }
 .manual-user-search input:focus {border: 0; box-shadow: none;}
 .save-button:disabled {cursor: not-allowed; opacity: .5;}
+
+/* Google authentication states */
+.auth-checking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 82px;
+  color: #626a76;
+  font-size: 12px;
+  font-weight: 800;
+}
+.scan-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 14px 0;
+  border-left: 3px solid #9e1d20;
+  border-radius: 6px;
+  background: #fdf0ee;
+  color: #7e1719;
+  padding: 11px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.scan-error svg {flex: none; margin-top: 1px;}
+.auth-switch {margin-top: 8px;}

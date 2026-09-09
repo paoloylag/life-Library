@@ -84,9 +84,11 @@ PROJECT_MANIFEST.md          Product and implementation inventory
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Service health check |
+| `GET` | `/api/auth/status` | Return Google authentication configuration status |
 | `GET` | `/api/auth/google` | Begin Google user authentication |
 | `GET` | `/api/auth/google/callback` | Complete Google authentication |
-| `GET` | `/api/auth/me` | Return the authenticated QR user |
+| `GET` | `/api/auth/me` | Return the authenticated QR user and library profile |
+| `POST` | `/api/auth/logout` | End the QR user session |
 | `POST` | `/api/admin/login` | Librarian credential login |
 | `GET` | `/api/admin/me` | Return the authenticated librarian |
 | `POST` | `/api/admin/logout` | End librarian session |
@@ -113,6 +115,9 @@ PROJECT_MANIFEST.md          Product and implementation inventory
 | `GOOGLE_REDIRECT_URI` | Backend OAuth callback URL |
 | `GOOGLE_ALLOWED_DOMAIN` | Institutional Google Workspace domain |
 | `FRONTEND_URL` | Allowed frontend origin and post-login destination |
+| `COOKIE_SECURE` | Require HTTPS for authentication cookies |
+| `COOKIE_SAMESITE` | Cookie cross-site policy (`lax`, `none`, or `strict`) |
+| `VITE_API_URL` | Public FastAPI origin compiled into the Pages frontend |
 
 Do not commit `.env` or production credentials. The domain in `.env.example` is a placeholder and must be replaced with Life College's confirmed Google Workspace domain.
 
@@ -161,7 +166,7 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Reports, charts, Excel, and PDF | Implemented with seeded data |
 | Persistent PostgreSQL attendance | Backend scaffold; frontend integration pending |
 | Librarian login screen/session enforcement | Backend scaffold; UI currently intentionally bypassed |
-| Google SSO check-in | Backend scaffold; credentials and frontend integration pending |
+| Google SSO check-in | Frontend and backend integrated; credentials, roster profiles, and backend deployment pending |
 | Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
 | Production QR token validation | Backend scaffold; frontend currently generates the daily token in-browser |
 | Server-backed settings | Pending |
