@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
@@ -12,6 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.auth import current_librarian, current_user, issue_librarian, issue_student, verify_password
 from app.config import settings
 from app.database import get_db, init_database
+from app.google_directory import lookup_directory_identity
 from app.models import Librarian, LibrarySession, LibraryVisit, StudentProfile, User
 from app.services import get_or_create_daily_session, scan
 
@@ -131,17 +133,23 @@ async def callback(request: Request, db=Depends(get_db)):
             user.avatar_url = info.get("picture") or user.avatar_url
 
         await db.flush()
+        directory_identity = await asyncio.to_thread(lookup_directory_identity, email)
         profile = await db.scalar(select(StudentProfile).where(StudentProfile.user_id == user.id))
         if not profile:
+            resolved_user_type = directory_identity.user_type if directory_identity else "student"
             profile = StudentProfile(
                 user_id=user.id,
                 student_number=email.split("@", 1)[0].upper(),
-                user_type="student",
+                user_type=resolved_user_type,
                 program=None,
                 section=None,
                 is_active=True,
             )
             db.add(profile)
+            user.role = resolved_user_type
+        elif directory_identity:
+            profile.user_type = directory_identity.user_type
+            user.role = directory_identity.user_type
         await db.commit()
         await db.refresh(user)
     except HTTPException as exc:

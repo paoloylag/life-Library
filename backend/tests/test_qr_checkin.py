@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.database import Base
+from app.google_directory import user_type_from_org_unit
 from app.models import StudentProfile, User
 from app.services import attendance_day, daily_token, get_or_create_daily_session, scan
 
@@ -30,6 +31,22 @@ def test_daily_token_is_stable_for_manila_day():
     assert second_day.isoformat() == "2026-09-10"
     assert daily_token(first_day) == daily_token(first_day)
     assert daily_token(first_day) != daily_token(second_day)
+
+
+@pytest.mark.parametrize(
+    ("org_unit", "expected"),
+    [
+        ("/Students", "student"),
+        ("/Students/College/First Year", "student"),
+        ("/Academics/Faculty", "faculty"),
+        ("/Academics/Faculty/College", "faculty"),
+        ("/Staff/Digital Transformation", "non-teaching personnel"),
+        ("/Academics/Dean's Office", "non-teaching personnel"),
+        ("/", "non-teaching personnel"),
+    ],
+)
+def test_org_unit_user_type_mapping(org_unit, expected):
+    assert user_type_from_org_unit(org_unit) == expected
 
 
 @pytest.mark.asyncio

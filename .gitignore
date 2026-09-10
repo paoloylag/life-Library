@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+*service-account*.json
+*-credentials.json
 .venv/
 venv/
 __pycache__/
