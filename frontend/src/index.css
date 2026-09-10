@@ -143,22 +143,25 @@
 .display-date {margin-top: 18px; padding-top: 13px; font-size: 14px;}
 .display-qr {width: min(100%, 540px); justify-self: center; padding: 18px;}
 
+.scan-page {
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding: 22px;
+  overflow-x: hidden;
+}
 .scan-page > header,
-.scan-card {width: min(430px, 100%);}
-.scan-page {padding: 14px;}
-.scan-card {margin: 18px auto; padding: 24px 20px;}
-.type-tabs {grid-template-columns: repeat(2, minmax(0, 1fr));}
-.type-tabs button {min-height: 68px; font-size: 11px;}
+.scan-card {width: min(680px, 100%);}
+.scan-card {margin: 24px auto; padding: 34px 36px;}
+.type-tabs {grid-template-columns: repeat(4, minmax(0, 1fr));}
+.type-tabs button {min-height: 76px; font-size: 11px;}
 .account-select select,
 .scan-form input,
 .scan-form select,
 .scan-primary,
 .scan-secondary {min-height: 48px;}
-.scan-success dl {grid-template-columns: 1fr;}
-.scan-success dl > div,
-.scan-success dl > div:nth-child(odd) {border-right: 0;}
-.scan-success dl > div.wide {grid-column: 1;}
-.scan-success dl > div:last-child {border-bottom: 0;}
+.scan-success dl {grid-template-columns: 1fr 1fr;}
+.scan-success dl > div:nth-child(odd) {border-right: 1px solid #e1e3e5;}
+.scan-success dl > div.wide {grid-column: 1 / -1; border-right: 0;}
 
 @media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
   .display-card {
@@ -174,20 +177,21 @@
 }
 
 /* iPhone 17 target: 402 x 874 CSS pixels at 3x scale */
-.scan-page {
-  min-height: 100svh;
-  min-height: 100dvh;
-  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-  overflow-x: hidden;
-}
-.scan-page > header,
-.scan-card {width: min(402px, 100%);}
-.scan-card {align-self: start; margin: 14px auto; padding: 22px 18px;}
-.account-select select,
-.scan-form input,
-.scan-form select {font-size: 16px;}
-
 @media (max-width: 430px) {
+  .scan-page {
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  .scan-page > header,
+  .scan-card {width: min(402px, 100%);}
+  .scan-card {align-self: start; margin: 14px auto; padding: 22px 18px;}
+  .account-select select,
+  .scan-form input,
+  .scan-form select {font-size: 16px;}
+  .type-tabs {grid-template-columns: repeat(2, minmax(0, 1fr));}
+  .scan-success dl {grid-template-columns: 1fr;}
+  .scan-success dl > div,
+  .scan-success dl > div:nth-child(odd) {border-right: 0;}
+  .scan-success dl > div.wide {grid-column: 1;}
   .scan-page > header {min-height: 48px;}
   .scan-page > header > button {width: 44px; height: 44px;}
   .scan-brand {gap: 7px;}
@@ -267,3 +271,9 @@
 }
 .scan-error svg {flex: none; margin-top: 1px;}
 .auth-switch {margin-top: 8px;}
+
+.scan-success .scan-close-message{margin:4px auto 0;border-top:1px solid #e1e3e5;padding-top:16px;color:#353941;font-size:14px;font-weight:800;text-align:center}
+
+.guest-toggle{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:14px;border:0;background:transparent;color:#690f0d;padding:7px;font-size:12px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.guest-toggle:hover{color:#9e1d20}
+.scan-form .guest-toggle{margin-top:-4px}
