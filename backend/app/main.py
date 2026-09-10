@@ -27,6 +27,14 @@ def safe_scan_path(value: str) -> str:
     return value
 
 
+def scan_url(request: Request, token: str) -> str:
+    if settings.app_env == "local":
+        origin = request.headers.get("origin", "").rstrip("/")
+        if origin:
+            return f"{origin}/life-Library/scan/{token}"
+    return f"{settings.frontend_url.rstrip('/')}/scan/{token}"
+
+
 def frontend_redirect(path: str, error: str | None = None) -> str:
     url = settings.frontend_url.rstrip("/") + safe_scan_path(path)
     if error:
@@ -251,10 +259,10 @@ async def admin_logout():
 
 
 @app.get("/api/library/sessions/current")
-async def current_session(db=Depends(get_db)):
+async def current_session(request: Request, db=Depends(get_db)):
     row, raw = await get_or_create_daily_session(db)
     return {
-        "scan_url": f"{settings.frontend_url.rstrip('/')}/scan/{raw}",
+        "scan_url": scan_url(request, raw),
         "session_date": row.session_date,
         "expires_at": row.expires_at,
         "status": row.status,
@@ -262,10 +270,10 @@ async def current_session(db=Depends(get_db)):
 
 
 @app.post("/api/library/sessions")
-async def create_session(librarian=Depends(current_librarian), db=Depends(get_db)):
+async def create_session(request: Request, librarian=Depends(current_librarian), db=Depends(get_db)):
     row, raw = await get_or_create_daily_session(db)
     return {
-        "scan_url": f"{settings.frontend_url.rstrip('/')}/scan/{raw}",
+        "scan_url": scan_url(request, raw),
         "session_date": row.session_date,
         "expires_at": row.expires_at,
         "status": row.status,
