@@ -5,7 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/library_attendance"
+    app_env: str = "local"
+    database_url: str = "sqlite+aiosqlite:///./library_attendance.db"
     secret_key: str = "development-only"
     google_client_id: str = ""
     google_client_secret: str = ""

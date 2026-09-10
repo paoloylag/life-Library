@@ -11,37 +11,33 @@ import {loadSettings} from './settings'
 import './index.css'
 
 const BASE=import.meta.env.BASE_URL
-const PUBLIC_APP_URL=(import.meta.env.VITE_PUBLIC_APP_URL||'').replace(/\/$/,'')
+const API=(import.meta.env.VITE_API_URL||'').replace(/\/$/,'')
 const currentPath=()=>{const path=location.pathname;const base=BASE.endsWith('/')?BASE.slice(0,-1):BASE;return base&&path.startsWith(base)?path.slice(base.length)||'/':path}
 const href=(path:string)=>BASE+(path==='/'?'':path.replace(/^\//,''))
-const publicHref=(path:string)=>PUBLIC_APP_URL+('/'+path.replace(/^\//,''))
 
 type DailyQr={date:string;url:string;expiresAt:number}
-const localDay=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
-function createDailyQr(force=false):DailyQr{
- const date=localDay(),storedDate=localStorage.getItem('qr-date'),storedUrl=localStorage.getItem('qr'),storedExpiry=Number(localStorage.getItem('qr-expires')||0)
- const expectedOrigin=PUBLIC_APP_URL||location.origin
- if(!force&&storedDate===date&&storedUrl&&storedUrl.startsWith(expectedOrigin+'/')&&storedExpiry>Date.now())return{date,url:storedUrl,expiresAt:storedExpiry}
- const midnight=new Date();midnight.setHours(24,0,0,0)
- const expiresAt=midnight.getTime(),token=`daily-${date}-${crypto.randomUUID()}`
- const url=PUBLIC_APP_URL?publicHref(`/scan/${token}?expires=${expiresAt}`):location.origin+href(`/scan/${token}?expires=${expiresAt}`)
- localStorage.setItem('qr',url);localStorage.setItem('qr-date',date);localStorage.setItem('qr-expires',String(expiresAt))
- dispatchEvent(new Event('daily-qr-changed'))
- return{date,url,expiresAt}
-}
+type DailyQrResponse={scan_url:string;session_date:string;expires_at:string;status:string}
 function useDailyQr(){
- const[qr,setQr]=React.useState<DailyQr>(()=>createDailyQr())
- React.useEffect(()=>{
-  let timer=0
-  const sync=()=>setQr(createDailyQr())
-  const schedule=()=>{const midnight=new Date();midnight.setHours(24,0,1,0);timer=window.setTimeout(()=>{sync();schedule()},midnight.getTime()-Date.now())}
-  addEventListener('storage',sync);addEventListener('daily-qr-changed',sync);schedule()
-  return()=>{clearTimeout(timer);removeEventListener('storage',sync);removeEventListener('daily-qr-changed',sync)}
+ const[qr,setQr]=React.useState<DailyQr>({date:'',url:'',expiresAt:0})
+ const[error,setError]=React.useState('')
+ const load=React.useCallback(async()=>{
+  try{
+   const response=await fetch(API+'/api/library/sessions/current',{credentials:'include'})
+   if(!response.ok)throw new Error('Unable to load the daily QR code')
+   const body=await response.json() as DailyQrResponse
+   setQr({date:body.session_date,url:body.scan_url,expiresAt:new Date(body.expires_at).getTime()})
+   setError('')
+  }catch(reason){
+   setError(reason instanceof Error?reason.message:'Unable to load the daily QR code')
+  }
  },[])
- const regenerate=()=>setQr(createDailyQr(true))
- return{...qr,regenerate}
-}
-const visits=[
+ React.useEffect(()=>{
+  load()
+  const timer=window.setInterval(load,60000)
+  return()=>clearInterval(timer)
+ },[load])
+ return{...qr,error,regenerate:load}
+}const visits=[
  {id:1,name:'Angela Reyes',number:'2026-00124',timeIn:'8:32 AM'},
  {id:2,name:'Marcus Lim',number:'2025-00817',timeIn:'8:43 AM'},
  {id:3,name:'Sofia Navarro',number:'2024-00309',timeIn:'9:01 AM'},
@@ -69,7 +65,7 @@ function App(){
 function Brand(){return <div className="brand-lockup"><span className="brand-mark"><img src={BASE+"lifeos-platform-crest.svg"} alt="LifeOS"/></span><span><strong>Life College</strong><small>Library Attendance</small></span></div>}
 function Sidebar({path,navigate,compact=false}:{path:string;navigate:(p:string)=>void;compact?:boolean}){return <aside className={`lifeos-sidebar ${compact?'compact':''}`}>{!compact&&<div className="sidebar-head"><Brand/></div>}<nav>{navigation.map(section=><div className="nav-section" key={section.label}><p>{section.label}</p>{section.items.map(item=>{const Icon=item.icon;return <button key={item.path} onClick={()=>navigate(item.path)} className={path===item.path||(item.path!=='/'&&path.startsWith(item.path+'/'))?'active':''}><Icon size={18}/><span>{item.label}</span><ChevronRight size={15}/></button>})}</div>)}</nav><div className="sidebar-foot"><span className="status-dot"/>LifeOS tenant connected</div></aside>}
 function Topbar({title,dark,setDark,open}:{title:string;dark:boolean;setDark:(v:boolean)=>void;open:()=>void}){return <header className="lifeos-topbar"><button className="icon-button mobile" onClick={open}><Menu size={20}/></button><div><h1>{title}</h1></div><div className="top-actions"><label className="search"><Search size={17}/><input placeholder="Search"/></label><button className="icon-button" title="Notifications"><Bell size={19}/></button><button className="icon-button" title="Theme" onClick={()=>setDark(!dark)}>{dark?<Sun size={19}/>:<Moon size={19}/>}</button><div className="user-chip"><span>LR</span><strong>Library Registrar</strong></div></div></header>}
-function Dashboard(){const{url,regenerate}=useDailyQr();return <div className="dashboard-grid"><section className="overview-hero"><div><span className="eyebrow">Library operations</span><h2>Library overview</h2><p>Monitor daily foot traffic and manage the student attendance code.</p></div><div className="date-block"><span>Today</span><strong>{new Date().toLocaleDateString(undefined,{month:'long',day:'numeric'})}</strong><small>{new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric'})}</small></div></section><Metric label="Check-ins today" value="6" detail="Across all user types"/><Metric label="Unique visitors" value="5" detail="Recorded today"/><Metric label="Peak check-in hour" value="9 AM" detail="Highest arrival volume"/><section className="panel qr-panel"><div className="panel-title"><div><QrCode size={18}/><h3>Daily QR code</h3></div><button className="icon-button qr-display-button" title="Open student display" onClick={()=>location.assign(href('/qr-display'))}><QrCode size={18}/></button></div><div className="qr-code"><QRCodeSVG value={url} size={230}/></div><div className="qr-actions"><button className="primary-button" onClick={regenerate}>Regenerate daily QR</button><button className="secondary-button manual-qr-button" onClick={()=>location.assign(href('/attendance?manual=1'))}><UserPlus size={17}/>Manual check-in</button></div><small>Generated automatically each day and replaced at midnight.</small></section><section className="panel activity-panel"><div className="panel-title"><div><Clock3 size={18}/><h3>Today's activity</h3></div><button className="secondary-button">Export</button></div><div className="table-wrap"><table><thead><tr><th>User</th><th>Check-in time</th><th>Attendance</th></tr></thead><tbody>{visits.map(v=><tr key={v.id}><td><strong>{v.name}</strong><small>{v.number}</small></td><td>{v.timeIn}</td><td><span className="badge inside">Checked in</span></td></tr>)}</tbody></table></div></section></div>}
+function Dashboard(){const{url,error,regenerate}=useDailyQr();return <div className="dashboard-grid"><section className="overview-hero"><div><span className="eyebrow">Library operations</span><h2>Library overview</h2><p>Monitor daily foot traffic and manage the student attendance code.</p></div><div className="date-block"><span>Today</span><strong>{new Date().toLocaleDateString(undefined,{month:'long',day:'numeric'})}</strong><small>{new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric'})}</small></div></section><Metric label="Check-ins today" value="6" detail="Across all user types"/><Metric label="Unique visitors" value="5" detail="Recorded today"/><Metric label="Peak check-in hour" value="9 AM" detail="Highest arrival volume"/><section className="panel qr-panel"><div className="panel-title"><div><QrCode size={18}/><h3>Daily QR code</h3></div><button className="icon-button qr-display-button" title="Open student display" onClick={()=>location.assign(href('/qr-display'))}><QrCode size={18}/></button></div><div className="qr-code">{url?<QRCodeSVG value={url} size={230}/>:<div className="display-empty"><QrCode size={36}/><strong>{error||'Loading daily QR code...'}</strong></div>}</div><div className="qr-actions"><button className="primary-button" onClick={regenerate}>Regenerate daily QR</button><button className="secondary-button manual-qr-button" onClick={()=>location.assign(href('/attendance?manual=1'))}><UserPlus size={17}/>Manual check-in</button></div><small>Generated automatically each day and replaced at midnight.</small></section><section className="panel activity-panel"><div className="panel-title"><div><Clock3 size={18}/><h3>Today's activity</h3></div><button className="secondary-button">Export</button></div><div className="table-wrap"><table><thead><tr><th>User</th><th>Check-in time</th><th>Attendance</th></tr></thead><tbody>{visits.map(v=><tr key={v.id}><td><strong>{v.name}</strong><small>{v.number}</small></td><td>{v.timeIn}</td><td><span className="badge inside">Checked in</span></td></tr>)}</tbody></table></div></section></div>}
 function QrDisplay({close}:{close:()=>void}){
  const settings=loadSettings(),{url}=useDailyQr()
  const[isFullscreen,setIsFullscreen]=React.useState(Boolean(document.fullscreenElement))

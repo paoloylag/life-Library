@@ -1,19 +1,19 @@
-from datetime import datetime, time, timezone
+from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from sqlalchemy import or_, select, update
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import current_librarian, current_user, issue_librarian, issue_student, verify_password
 from app.config import settings
-from app.database import get_db
+from app.database import get_db, init_database
 from app.models import Librarian, LibrarySession, LibraryVisit, StudentProfile, User
-from app.services import scan, token_pair
+from app.services import get_or_create_daily_session, scan
 
 
 def frontend_origin() -> str:
@@ -58,6 +58,11 @@ oauth.register(
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile"},
 )
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    await init_database()
 
 
 @app.get("/api/health")
@@ -116,6 +121,19 @@ async def callback(request: Request, db=Depends(get_db)):
             user.google_id = info["sub"]
             user.name = info.get("name") or user.name
             user.avatar_url = info.get("picture") or user.avatar_url
+
+        await db.flush()
+        profile = await db.scalar(select(StudentProfile).where(StudentProfile.user_id == user.id))
+        if not profile:
+            profile = StudentProfile(
+                user_id=user.id,
+                student_number=email.split("@", 1)[0].upper(),
+                user_type="student",
+                program=None,
+                section=None,
+                is_active=True,
+            )
+            db.add(profile)
         await db.commit()
         await db.refresh(user)
     except HTTPException as exc:
@@ -157,6 +175,43 @@ async def me(user=Depends(current_user)):
     }
 
 
+@app.post("/api/auth/dev-login")
+async def dev_login(db=Depends(get_db)):
+    if settings.app_env != "local":
+        raise HTTPException(404, "Local development sign-in is disabled")
+
+    email = "qr-test@life.edu.ph"
+    user = await db.scalar(select(User).where(User.email == email))
+    if not user:
+        user = User(email=email, name="QR Test Student", role="student", is_active=True)
+        db.add(user)
+        await db.flush()
+    profile = await db.scalar(select(StudentProfile).where(StudentProfile.user_id == user.id))
+    if not profile:
+        db.add(
+            StudentProfile(
+                user_id=user.id,
+                student_number="QR-TEST-001",
+                user_type="student",
+                program="Local Development",
+                section="Test Section",
+                is_active=True,
+            )
+        )
+    await db.commit()
+
+    response = Response(status_code=204)
+    response.set_cookie(
+        "library_session",
+        issue_student(user.id),
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        max_age=43200,
+        path="/",
+    )
+    return response
+
 @app.post("/api/auth/logout")
 async def user_logout():
     response = Response(status_code=204)
@@ -195,24 +250,26 @@ async def admin_logout():
     return response
 
 
+@app.get("/api/library/sessions/current")
+async def current_session(db=Depends(get_db)):
+    row, raw = await get_or_create_daily_session(db)
+    return {
+        "scan_url": f"{settings.frontend_url.rstrip('/')}/scan/{raw}",
+        "session_date": row.session_date,
+        "expires_at": row.expires_at,
+        "status": row.status,
+    }
+
+
 @app.post("/api/library/sessions")
 async def create_session(librarian=Depends(current_librarian), db=Depends(get_db)):
-    now = datetime.now(timezone.utc)
-    await db.execute(
-        update(LibrarySession)
-        .where(LibrarySession.session_date == now.date(), LibrarySession.status == "open")
-        .values(status="closed")
-    )
-    raw, token_hash = token_pair()
-    row = LibrarySession(
-        session_date=now.date(), name="Library attendance", token_hash=token_hash,
-        starts_at=now, expires_at=datetime.combine(now.date(), time.max, tzinfo=timezone.utc),
-        status="open", created_by=librarian.id,
-    )
-    db.add(row)
-    await db.commit()
-    return {"scan_url": f"{settings.frontend_url}/scan/{raw}", "expires_at": row.expires_at}
-
+    row, raw = await get_or_create_daily_session(db)
+    return {
+        "scan_url": f"{settings.frontend_url.rstrip('/')}/scan/{raw}",
+        "session_date": row.session_date,
+        "expires_at": row.expires_at,
+        "status": row.status,
+    }
 
 @app.post("/api/library/scan/{token}")
 async def record(token: str, user=Depends(current_user), db=Depends(get_db)):

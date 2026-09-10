@@ -31,7 +31,7 @@ class LibrarySession(Base):
     id:Mapped[int]=mapped_column(primary_key=True); session_date:Mapped[date]=mapped_column(Date,index=True)
     name:Mapped[str]=mapped_column(String(120)); token_hash:Mapped[str]=mapped_column(String(64),unique=True,index=True)
     starts_at:Mapped[datetime]=mapped_column(DateTime(timezone=True)); expires_at:Mapped[datetime]=mapped_column(DateTime(timezone=True))
-    status:Mapped[str]=mapped_column(String(20),default="open",index=True); created_by:Mapped[int]=mapped_column(ForeignKey("librarians.id"))
+    status:Mapped[str]=mapped_column(String(20),default="open",index=True); created_by:Mapped[int|None]=mapped_column(ForeignKey("librarians.id"),nullable=True)
 
 class LibraryVisit(Base):
     __tablename__="library_visits"
