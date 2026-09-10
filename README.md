@@ -11,6 +11,29 @@ See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architectu
 3. In `frontend`, run `pnpm install`, then `pnpm dev`.
 4. In `frontend`, run `npm install`, then `npm run dev`.
 
+## Docker setup
+
+1. Copy `.env.example` to `.env` and set `SECRET_KEY` plus the Google OAuth values.
+2. Set a local `POSTGRES_PASSWORD` in `.env`.
+3. Run `docker compose up --build`.
+
+Compose starts PostgreSQL on port `5432` and the FastAPI service on port `8000`.
+The API container runs `alembic upgrade head` before starting Uvicorn. SQLite remains
+the default for direct, non-container local development.
+
+Set `GOOGLE_SERVICE_ACCOUNT_HOST_FILE` to the local JSON file's absolute path for
+Docker Compose. It is mounted read-only and is not copied into the image. See
+`docs/CURRENT_IMPLEMENTATION.md` for the verified state and Cloud Run checklist.
+
+## Database migrations
+
+From `backend`, create a migration after changing a model with:
+
+```text
+alembic revision --autogenerate -m "describe the change"
+alembic upgrade head
+```
+
 API docs: `http://localhost:8000/docs`. Web app: `http://localhost:5173/life-Library/`.
 
 
@@ -25,7 +48,24 @@ The QR scan flow uses Google OpenID Connect through FastAPI. Google client secre
 5. In production set `COOKIE_SECURE=true` and `COOKIE_SAMESITE=none` only when the frontend and API are genuinely cross-site. Prefer hosting both on the same institutional site.
 6. Set the GitHub repository Actions variable `VITE_API_URL` to the public HTTPS FastAPI origin, without a trailing slash.
 
-During this minimum development slice, the first verified `@life.edu.ph` Google login creates a basic student profile. Replace this with roster-controlled profile matching before production launch.
+Google Directory classifies `/Students` as students, `/Academics/Faculty` as
+faculty, and all other organizational units as non-teaching personnel.
+
+### Keyless Google Directory access
+
+Local development can use `GOOGLE_SERVICE_ACCOUNT_FILE`. Cloud Run should leave
+that value empty and use these settings instead:
+
+```text
+GOOGLE_SERVICE_ACCOUNT_EMAIL=librarian@lci-library-attendance.iam.gserviceaccount.com
+GOOGLE_WORKSPACE_DELEGATED_ADMIN=dt@life.edu.ph
+GOOGLE_DIRECTORY_SCOPE=https://www.googleapis.com/auth/admin.directory.user.readonly
+```
+
+Attach the service account to the Cloud Run service, enable the IAM Service Account
+Credentials API, and grant the runtime identity `roles/iam.serviceAccountTokenCreator`
+on that service account. The application then signs a short-lived delegated JWT with
+Google IAM; no private key is stored in the deployed container.
 
 ## Local QR check-in test
 

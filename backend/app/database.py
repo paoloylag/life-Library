@@ -18,5 +18,7 @@ async def get_db():
 
 
 async def init_database() -> None:
+    if settings.app_env != "local":
+        return
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
