@@ -36,10 +36,13 @@ export default function ScanPage(){
 
  React.useEffect(()=>{
   if(!backendEnabled)return
-  fetch(api('/api/auth/me'),{credentials:'include'})
+  const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),8000)
+  fetch(api('/api/auth/me'),{credentials:'include',signal:controller.signal})
    .then(async response=>{if(response.status===401)return null;if(!response.ok)throw new Error('Unable to verify your session');return response.json()})
    .then(setAuthUser)
-   .catch(()=>{setAuthUser(null);setError('The authentication service is temporarily unavailable.')})
+   .catch(()=>{setAuthUser(null);setError('The authentication service could not be reached. Check your connection and try again.')})
+   .finally(()=>clearTimeout(timeout))
+  return()=>{clearTimeout(timeout);controller.abort()}
  },[])
 
  function recordVisitor(user:SeedUser,extra:{organization:string;purpose:string}){
