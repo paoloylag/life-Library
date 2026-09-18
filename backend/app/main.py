@@ -1,4 +1,5 @@
 import asyncio
+from uuid import uuid4
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
@@ -8,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -16,11 +18,13 @@ from app.auth import (
     current_user,
     issue_librarian,
     issue_student,
-    librarian_or_development,
+    librarian_admin,
+    librarian_editor,
     verify_password,
 )
 from app.config import settings
-from app.database import get_db, init_database
+from app.database import SessionLocal, get_db, init_database
+from app.dev_librarians import DEV_ACCOUNTS, dev_accounts_enabled, seed_dev_librarians
 from app.google_directory import lookup_directory_identity
 from app.library_settings import LibrarySettings, read_library_settings, save_library_settings, settings_audit
 from app.models import Librarian, LibraryConfiguration, LibrarySession, LibraryVisit, StudentProfile, User
@@ -50,6 +54,34 @@ class GuestCheckIn(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     organization: str | None = Field(default=None, max_length=180)
     purpose: str = Field(min_length=2, max_length=180)
+
+
+class LibraryUserInput(BaseModel):
+    number: str = Field(min_length=1, max_length=50)
+    name: str = Field(min_length=2, max_length=255)
+    email: str = Field(default="", max_length=255)
+    user_type: str
+    program: str = Field(default="", max_length=120)
+    year_level: str = Field(default="", max_length=50)
+    section: str = Field(default="", max_length=120)
+    department: str = Field(default="", max_length=120)
+    organization: str = Field(default="", max_length=180)
+    is_active: bool = True
+
+
+USER_CATEGORIES = {"student", "faculty", "non-teaching personnel", "administrator", "visitor"}
+
+
+def clean_user_input(body: LibraryUserInput):
+    values = {key: value.strip() if isinstance(value, str) else value for key, value in body.model_dump().items()}
+    values["email"] = values["email"].lower()
+    if not values["number"] or len(values["name"]) < 2 or values["user_type"] not in USER_CATEGORIES:
+        raise HTTPException(422, "Enter a valid number, name, and user category")
+    if values["user_type"] != "visitor" and ("@" not in values["email"] or values["email"].endswith("@visitor.local")):
+        raise HTTPException(422, "An email address is required for a non-visitor account")
+    if values["email"] and ("@" not in values["email"] or values["email"].startswith("@")):
+        raise HTTPException(422, "Enter a valid email address")
+    return values
 
 
 def safe_scan_path(value: str) -> str:
@@ -89,6 +121,7 @@ def profile_json(profile: StudentProfile, visit_count: int = 0, last_visit=None)
         "department": profile.department or "",
         "organization": profile.organization or "",
         "is_active": profile.is_active and profile.user.is_active,
+        "managed_by_google": bool(profile.user.google_id),
         "visit_count": visit_count,
         "last_visit": last_visit,
     }
@@ -108,6 +141,7 @@ def visit_json(visit: LibraryVisit):
         "organization": profile.organization or "",
         "check_in_time": visit.time_in,
         "source": visit.source,
+        "recorded_by": visit.adjuster.name if visit.adjuster else None,
         "note": visit.adjustment_note or "",
         "purpose": visit.purpose or "",
         "reference": f"LC-{visit.id:08d}",
@@ -141,7 +175,11 @@ oauth.register(
 
 @app.on_event("startup")
 async def startup() -> None:
+    settings.validate_production_auth()
     await init_database()
+    if dev_accounts_enabled():
+        async with SessionLocal() as db:
+            await seed_dev_librarians(db)
 
 
 @app.get("/api/health")
@@ -161,7 +199,7 @@ async def auth_status():
 
 @app.get("/api/library/settings")
 async def get_library_settings(
-    librarian=Depends(librarian_or_development), db=Depends(get_db),
+    librarian=Depends(librarian_admin), db=Depends(get_db),
 ):
     row = await db.get(LibraryConfiguration, 1)
     return {
@@ -174,10 +212,10 @@ async def get_library_settings(
 @app.put("/api/library/settings")
 async def put_library_settings(
     payload: LibrarySettings,
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(librarian_admin),
     db=Depends(get_db),
 ):
-    await save_library_settings(db, payload, librarian.name if librarian else "Development librarian")
+    await save_library_settings(db, payload, librarian.name)
     return {"settings": payload.model_dump(), "audit": await settings_audit(db), "configured": True}
 
 
@@ -304,7 +342,7 @@ async def me(user=Depends(current_user)):
 
 @app.post("/api/auth/dev-login")
 async def dev_login(db=Depends(get_db)):
-    if settings.app_env != "local":
+    if not dev_accounts_enabled():
         raise HTTPException(404, "Local development sign-in is disabled")
 
     email = "qr-test@life.edu.ph"
@@ -358,8 +396,10 @@ async def admin_login(request: Request, db=Depends(get_db)):
             Librarian.is_active.is_(True),
         )
     )
-    if not librarian or not verify_password(
-        str(body.get("password", "")), librarian.password_hash
+    if (
+        not librarian
+        or (librarian.is_development and not dev_accounts_enabled())
+        or not verify_password(str(body.get("password", "")), librarian.password_hash)
     ):
         raise HTTPException(401, "Invalid email or password")
     response = Response(status_code=204)
@@ -377,7 +417,14 @@ async def admin_login(request: Request, db=Depends(get_db)):
 
 @app.get("/api/admin/me")
 async def admin_me(librarian=Depends(current_librarian)):
-    return {"id": librarian.id, "name": librarian.name, "email": librarian.email}
+    return {"id": librarian.id, "name": librarian.name, "email": librarian.email, "role": librarian.role}
+
+
+@app.get("/api/admin/dev-accounts")
+async def admin_dev_accounts():
+    if not dev_accounts_enabled():
+        raise HTTPException(404, "Development accounts unavailable")
+    return {"accounts": DEV_ACCOUNTS}
 
 
 @app.post("/api/admin/logout")
@@ -388,7 +435,9 @@ async def admin_logout():
 
 
 @app.get("/api/library/sessions/current")
-async def current_session(request: Request, db=Depends(get_db)):
+async def current_session(
+    request: Request, librarian=Depends(librarian_editor), db=Depends(get_db),
+):
     row, raw = await get_or_create_daily_session(db)
     return {
         "scan_url": scan_url(request, raw),
@@ -400,7 +449,7 @@ async def current_session(request: Request, db=Depends(get_db)):
 
 @app.post("/api/library/sessions")
 async def create_session(
-    request: Request, librarian=Depends(current_librarian), db=Depends(get_db)
+    request: Request, librarian=Depends(librarian_editor), db=Depends(get_db)
 ):
     row, raw = await get_or_create_daily_session(db)
     return {
@@ -450,7 +499,7 @@ async def library_users(
     user_type: str = "",
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
     filters = []
@@ -511,9 +560,79 @@ async def library_users(
     return {"items": items, "total": total or 0, "page": page, "page_size": page_size}
 
 
+@app.post("/api/library/users", status_code=201)
+async def create_library_user(
+    body: LibraryUserInput, librarian=Depends(librarian_admin), db=Depends(get_db)
+):
+    values = clean_user_input(body)
+    email = values["email"] or f"visitor-{uuid4().hex}@visitor.local"
+    if await db.scalar(select(User.id).where(User.email == email)) or await db.scalar(
+        select(StudentProfile.id).where(StudentProfile.student_number == values["number"])
+    ):
+        raise HTTPException(409, "Email address or user number already exists")
+    user = User(email=email, name=values["name"], role=values["user_type"], is_active=values["is_active"])
+    db.add(user)
+    await db.flush()
+    profile = StudentProfile(
+        user_id=user.id, student_number=values["number"], user_type=values["user_type"],
+        is_active=values["is_active"], **{key: values[key] or None for key in
+        ("program", "year_level", "section", "department", "organization")}
+    )
+    db.add(profile)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Email address or user number already exists")
+    await db.refresh(profile)
+    return profile_json(profile)
+
+
+@app.put("/api/library/users/{number}")
+async def update_library_user(
+    number: str, body: LibraryUserInput, librarian=Depends(librarian_admin), db=Depends(get_db)
+):
+    values = clean_user_input(body)
+    profile = await db.scalar(
+        select(StudentProfile).where(StudentProfile.student_number == number)
+        .options(selectinload(StudentProfile.user))
+    )
+    if not profile:
+        raise HTTPException(404, "Library user not found")
+    if profile.user.google_id and values["user_type"] != profile.user_type:
+        raise HTTPException(409, "Google-linked user categories are managed by Workspace")
+    if profile.user.google_id and (values["email"] != profile.user.email or values["number"] != number):
+        raise HTTPException(409, "Google-linked email and user number cannot be changed here")
+    if not values["email"] and values["user_type"] == "visitor":
+        values["email"] = profile.user.email
+    if values["email"] != profile.user.email and await db.scalar(
+        select(User.id).where(User.email == values["email"])
+    ):
+        raise HTTPException(409, "Email address already exists")
+    if values["number"] != number and await db.scalar(
+        select(StudentProfile.id).where(StudentProfile.student_number == values["number"])
+    ):
+        raise HTTPException(409, "User number already exists")
+    profile.user.name = values["name"]
+    profile.user.email = values["email"]
+    profile.user.role = values["user_type"]
+    profile.user.is_active = values["is_active"]
+    profile.student_number = values["number"]
+    profile.user_type = values["user_type"]
+    profile.is_active = values["is_active"]
+    for key in ("program", "year_level", "section", "department", "organization"):
+        setattr(profile, key, values[key] or None)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Email address or user number already exists")
+    return profile_json(profile)
+
+
 @app.get("/api/library/users/{number}")
 async def library_user(
-    number: str, librarian=Depends(librarian_or_development), db=Depends(get_db)
+    number: str, librarian=Depends(current_librarian), db=Depends(get_db)
 ):
     profile = await db.scalar(
         select(StudentProfile)
@@ -534,7 +653,7 @@ async def library_user(
 
 @app.get("/api/library/users/{number}/visits")
 async def library_user_visits(
-    number: str, librarian=Depends(librarian_or_development), db=Depends(get_db)
+    number: str, librarian=Depends(current_librarian), db=Depends(get_db)
 ):
     profile = await db.scalar(
         select(StudentProfile).where(StudentProfile.student_number == number)
@@ -546,7 +665,8 @@ async def library_user_visits(
             select(LibraryVisit)
             .where(LibraryVisit.student_profile_id == profile.id)
             .options(
-                selectinload(LibraryVisit.student).selectinload(StudentProfile.user)
+                selectinload(LibraryVisit.student).selectinload(StudentProfile.user),
+                selectinload(LibraryVisit.adjuster),
             )
             .order_by(LibraryVisit.time_in.desc())
         )
@@ -560,7 +680,7 @@ async def attendance(
     user_type: str = "",
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=500),
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
     filters = []
@@ -581,7 +701,8 @@ async def attendance(
     rows = (
         await db.scalars(
             base.options(
-                selectinload(LibraryVisit.student).selectinload(StudentProfile.user)
+                selectinload(LibraryVisit.student).selectinload(StudentProfile.user),
+                selectinload(LibraryVisit.adjuster),
             )
             .order_by(LibraryVisit.time_in.desc())
             .offset((page - 1) * page_size)
@@ -599,7 +720,7 @@ async def attendance(
 @app.post("/api/library/attendance/manual")
 async def manual_check_in(
     body: ManualCheckIn,
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(librarian_editor),
     db=Depends(get_db),
 ):
     checked_in_at = body.checked_in_at or datetime.now(timezone.utc)
@@ -636,7 +757,7 @@ async def manual_check_in(
         time_in=checked_in_at,
         status="checked_in",
         source="manual",
-        adjusted_by=librarian.id if librarian else None,
+        adjusted_by=librarian.id,
         adjustment_note=(body.note or "").strip() or None,
         purpose=(body.purpose or "").strip() or None,
     )
@@ -647,18 +768,20 @@ async def manual_check_in(
         "action": "check_in",
         "check_in_time": visit.time_in,
         "reference": f"LC-{visit.id:08d}",
+        "recorded_by": librarian.name,
     }
 
 
 @app.get("/api/library/dashboard")
-async def dashboard(librarian=Depends(librarian_or_development), db=Depends(get_db)):
+async def dashboard(librarian=Depends(current_librarian), db=Depends(get_db)):
     starts_at, expires_at = utc_bounds(attendance_day())
     rows = (
         await db.scalars(
             select(LibraryVisit)
             .where(LibraryVisit.time_in.between(starts_at, expires_at))
             .options(
-                selectinload(LibraryVisit.student).selectinload(StudentProfile.user)
+                selectinload(LibraryVisit.student).selectinload(StudentProfile.user),
+                selectinload(LibraryVisit.adjuster),
             )
             .order_by(LibraryVisit.time_in.desc())
         )
@@ -700,7 +823,7 @@ def report_filters(
 @app.get("/api/library/reports")
 async def library_report(
     filters: ReportFilters = Depends(report_filters),
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
     return await build_report(db, filters)
@@ -709,7 +832,7 @@ async def library_report(
 @app.get("/api/library/reports/export.xlsx")
 async def library_report_excel(
     filters: ReportFilters = Depends(report_filters),
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
     report = await build_report(db, filters)
@@ -723,7 +846,7 @@ async def library_report_excel(
 @app.get("/api/library/reports/export.pdf")
 async def library_report_pdf(
     filters: ReportFilters = Depends(report_filters),
-    librarian=Depends(librarian_or_development),
+    librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
     report = await build_report(db, filters)

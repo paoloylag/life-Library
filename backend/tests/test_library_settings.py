@@ -1,7 +1,9 @@
 import pytest
+from app.auth import hash_password
 from app.config import settings
 from app.database import Base, get_db
 from app.main import app
+from app.models import Librarian
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -19,7 +21,10 @@ async def client(monkeypatch):
 
     monkeypatch.setattr(settings, "app_env", "local")
     app.dependency_overrides[get_db] = override_db
+    session.add(Librarian(email="admin@life.edu.ph", name="Test Admin", password_hash=hash_password("test-password"), role="admin", is_active=True))
+    await session.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as value:
+        assert (await value.post("/api/admin/login", json={"email": "admin@life.edu.ph", "password": "test-password"})).status_code == 204
         yield value
     app.dependency_overrides.clear()
     await session.close()
@@ -60,6 +65,7 @@ async def test_settings_validate_and_require_librarian_in_production(client, mon
     assert (await client.put("/api/library/settings", json=payload)).status_code == 422
 
     monkeypatch.setattr(settings, "app_env", "production")
+    await client.post("/api/admin/logout")
     assert (await client.get("/api/library/settings")).status_code == 401
     assert (await client.put("/api/library/settings", json=payload)).status_code == 401
     assert (await client.get("/api/library/settings/display")).status_code == 200

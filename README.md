@@ -7,9 +7,16 @@ See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architectu
 ## Local setup
 
 1. Copy `.env.example` to `.env`; SQLite is the default zero-setup development database.
-2. In `backend`, run `pip install -e ".[dev]"`, then `uvicorn app.main:app --reload`.
-3. In `frontend`, run `pnpm install`, then `pnpm dev`.
-4. In `frontend`, run `npm install`, then `npm run dev`.
+2. In `backend`, run `pip install -e ".[dev]"` and `alembic upgrade head`.
+3. Create a real librarian account with `python -m app.create_librarian`, or set
+   `ENABLE_DEV_LIBRARIANS=true` only for an isolated local test server.
+4. Start `uvicorn app.main:app --reload --host 127.0.0.1` in `backend`.
+5. In `frontend`, run `pnpm install`, then `pnpm dev --host 127.0.0.1`.
+
+When local test accounts are enabled, the sign-in page shows a `Login as`
+selector for Administrator, Librarian, and Auditor. Selecting one fills the
+email and password fields. This selector and its accounts are unavailable in
+production. Never enable them on a network-exposed server.
 
 ## Docker setup
 

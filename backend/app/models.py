@@ -13,6 +13,8 @@ class Librarian(Base):
     name: Mapped[str] = mapped_column(String(255))
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    role: Mapped[str] = mapped_column(String(20), default="librarian")
+    is_development: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class User(Base):
@@ -79,6 +81,7 @@ class LibraryVisit(Base):
     purpose: Mapped[str | None] = mapped_column(String(180))
     student: Mapped[StudentProfile] = relationship()
     session: Mapped[LibrarySession] = relationship()
+    adjuster: Mapped[Librarian | None] = relationship()
 
 
 class LibraryConfiguration(Base):

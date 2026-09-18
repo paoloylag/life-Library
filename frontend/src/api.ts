@@ -3,11 +3,12 @@ export const API=(import.meta.env.VITE_API_URL||'').replace(/\/$/,'')
 export type ApiUser={
  number:string;name:string;email:string;user_type:string;program:string;year_level:string;
  section:string;department:string;organization:string;is_active:boolean;visit_count:number;last_visit:string|null
+ managed_by_google:boolean
 }
 export type ApiVisit={
  id:number;user_number:string;name:string;user_type:string;program:string;year_level:string;
  section:string;department:string;organization:string;check_in_time:string;source:string;
- note:string;purpose:string;reference:string
+ note:string;purpose:string;reference:string;recorded_by:string|null
 }
 export type Page<T>={items:T[];total:number;page:number;page_size:number}
 

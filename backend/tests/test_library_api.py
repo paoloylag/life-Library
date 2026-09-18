@@ -1,8 +1,9 @@
 import pytest
 from app.config import settings
+from app.auth import hash_password
 from app.database import Base, get_db
 from app.main import app
-from app.models import StudentProfile, User
+from app.models import Librarian, StudentProfile, User
 from app.services import get_or_create_daily_session
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -29,9 +30,12 @@ async def api_db(monkeypatch):
 
 @pytest.fixture
 async def client(api_db):
+    api_db.add(Librarian(email="admin@life.edu.ph", name="Test Admin", password_hash=hash_password("test-password"), role="admin", is_active=True))
+    await api_db.commit()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as value:
+        assert (await value.post("/api/admin/login", json={"email": "admin@life.edu.ph", "password": "test-password"})).status_code == 204
         yield value
 
 
@@ -70,6 +74,7 @@ async def test_user_search_manual_check_in_and_history(client, api_db):
     assert history.status_code == 200
     assert history.json()["items"][0]["source"] == "manual"
     assert history.json()["items"][0]["note"] == "Scanner unavailable"
+    assert history.json()["items"][0]["recorded_by"] == "Test Admin"
 
 
 @pytest.mark.asyncio

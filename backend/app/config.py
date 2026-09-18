@@ -24,7 +24,18 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     cookie_samesite: Literal["lax", "none", "strict"] = "lax"
     duplicate_scan_seconds: int = 20
+    enable_dev_librarians: bool = False
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
+
+    def validate_production_auth(self) -> None:
+        if self.app_env != "production":
+            return
+        if len(self.secret_key) < 32 or self.secret_key in (
+            "development-only", "replace-with-a-long-random-secret",
+        ):
+            raise RuntimeError("Production requires a unique SECRET_KEY of at least 32 characters")
+        if not self.cookie_secure:
+            raise RuntimeError("Production requires COOKIE_SECURE=true")
 
     @property
     def allowed_frontend_origins(self) -> list[str]:

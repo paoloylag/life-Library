@@ -2,10 +2,11 @@ from datetime import date, datetime, timezone
 from io import BytesIO
 
 import pytest
+from app.auth import hash_password
 from app.config import settings
 from app.database import Base, get_db
 from app.main import app
-from app.models import LibrarySession, LibraryVisit, StudentProfile, User
+from app.models import Librarian, LibrarySession, LibraryVisit, StudentProfile, User
 from app.reports import academic_year, academic_year_start, semester
 from httpx import ASGITransport, AsyncClient
 from openpyxl import load_workbook
@@ -33,7 +34,10 @@ async def report_db(monkeypatch):
 
 @pytest.fixture
 async def client(report_db):
+    report_db.add(Librarian(email="admin@life.edu.ph", name="Test Admin", password_hash=hash_password("test-password"), role="admin", is_active=True))
+    await report_db.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as value:
+        assert (await value.post("/api/admin/login", json={"email": "admin@life.edu.ph", "password": "test-password"})).status_code == 204
         yield value
 
 

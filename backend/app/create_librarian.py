@@ -11,6 +11,9 @@ from app.models import Librarian
 async def main():
     email = input("Email: ").strip().lower()
     name = input("Name: ").strip()
+    role = input("Role [admin/librarian/auditor] (librarian): ").strip().lower() or "librarian"
+    if role not in ("admin", "librarian", "auditor"):
+        raise SystemExit("Invalid role.")
     password = getpass.getpass("Password: ")
     if len(password) < 10:
         raise SystemExit("Password must be at least 10 characters.")
@@ -19,7 +22,7 @@ async def main():
     async with SessionLocal() as db:
         if await db.scalar(select(Librarian).where(Librarian.email == email)):
             raise SystemExit("Account already exists.")
-        db.add(Librarian(email=email, name=name, password_hash=hash_password(password)))
+        db.add(Librarian(email=email, name=name, role=role, password_hash=hash_password(password)))
         await db.commit()
     print("Librarian account created.")
 

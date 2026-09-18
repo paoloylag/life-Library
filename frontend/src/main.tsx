@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Clock3,
   LayoutDashboard,
+  LogOut,
   Maximize2,
   Menu,
   Minimize2,
@@ -23,6 +24,7 @@ import Reports from "./Reports";
 import Students, { StudentDetail } from "./Students";
 import Attendance from "./Attendance";
 import SettingsPage from "./SettingsPage";
+import LoginPage, { LibrarianSession } from "./LoginPage";
 import ScanPage from "./ScanPage";
 import { apiRequest, ApiVisit } from "./api";
 import { defaultSettings, getDisplaySettings } from "./settings";
@@ -45,7 +47,7 @@ type DailyQrResponse = {
   expires_at: string;
   status: string;
 };
-function useDailyQr() {
+function useDailyQr(enabled = true) {
   const [qr, setQr] = React.useState<DailyQr>({
     date: "",
     url: "",
@@ -53,6 +55,7 @@ function useDailyQr() {
   });
   const [error, setError] = React.useState("");
   const load = React.useCallback(async () => {
+    if (!enabled) return;
     try {
       const response = await fetch(API + "/api/library/sessions/current", {
         credentials: "include",
@@ -72,12 +75,13 @@ function useDailyQr() {
           : "Unable to load the daily QR code",
       );
     }
-  }, []);
+  }, [enabled]);
   React.useEffect(() => {
+    if (!enabled) return;
     load();
     const timer = window.setInterval(load, 60000);
     return () => clearInterval(timer);
-  }, [load]);
+  }, [enabled, load]);
   return { ...qr, error, regenerate: load };
 }
 const navigation = [
@@ -97,6 +101,8 @@ const navigation = [
 ];
 function App() {
   const [path, setPath] = React.useState(currentPath());
+  const [librarian, setLibrarian] = React.useState<LibrarianSession | null>(null);
+  const [authLoading, setAuthLoading] = React.useState(true);
   const [drawer, setDrawer] = React.useState(false);
   const [dark, setDark] = React.useState(
     () => localStorage.getItem("dark-mode") === "true",
@@ -110,13 +116,27 @@ function App() {
     () => localStorage.setItem("dark-mode", String(dark)),
     [dark],
   );
+  React.useEffect(() => {
+    apiRequest<LibrarianSession>("/api/admin/me")
+      .then(setLibrarian)
+      .catch(() => setLibrarian(null))
+      .finally(() => setAuthLoading(false));
+  }, []);
+  async function logout() {
+    try { await apiRequest("/api/admin/logout", {method: "POST"}); }
+    catch { /* Clear the local view even if the server is temporarily unavailable. */ }
+    finally { setLibrarian(null); navigate("/"); }
+  }
   function navigate(next: string) {
     history.pushState({}, "", href(next));
     setPath(next);
     setDrawer(false);
   }
-  if (path === "/qr-display") return <QrDisplay close={() => navigate("/")} />;
   if (path.startsWith("/scan/")) return <ScanPage />;
+  if (authLoading) return <main className="librarian-login"><p role="status">Checking librarian session...</p></main>;
+  if (!librarian) return <LoginPage onLogin={setLibrarian} />;
+  if (path === "/qr-display")
+    return librarian.role === "auditor" ? <main className="librarian-login"><p>QR display requires librarian access.</p><button onClick={() => navigate("/")}>Dashboard</button></main> : <QrDisplay close={() => navigate("/")} />;
   const title =
     path === "/reports"
       ? "Reports"
@@ -129,7 +149,7 @@ function App() {
             : "Dashboard";
   return (
     <div className={`lifeos-shell ${dark ? "dark" : ""}`}>
-      <Sidebar path={path} navigate={navigate} />
+      <Sidebar path={path} navigate={navigate} librarian={librarian} logout={logout} />
       <div className="lifeos-workspace">
         <Topbar
           title={title}
@@ -145,13 +165,13 @@ function App() {
               number={decodeURIComponent(path.slice("/students/".length))}
             />
           ) : path === "/students" ? (
-            <Students />
+            <Students canManage={librarian.role === "admin"} />
           ) : path === "/attendance" ? (
-            <Attendance />
+            <Attendance editable={librarian.role !== "auditor"} />
           ) : path === "/settings" ? (
-            <SettingsPage />
+            librarian.role === "admin" ? <SettingsPage /> : <p role="alert">Administrator permission required.</p>
           ) : path === "/" ? (
-            <Dashboard />
+            <Dashboard editable={librarian.role !== "auditor"} />
           ) : (
             <Placeholder title={title} />
           )}
@@ -165,7 +185,7 @@ function App() {
               <X size={20} />
             </button>
           </div>
-          <Sidebar path={path} navigate={navigate} compact />
+          <Sidebar path={path} navigate={navigate} compact librarian={librarian} logout={logout} />
         </div>
       )}
     </div>
@@ -188,11 +208,32 @@ function Sidebar({
   path,
   navigate,
   compact = false,
+  librarian,
+  logout,
 }: {
   path: string;
   navigate: (p: string) => void;
   compact?: boolean;
+  librarian: LibrarianSession;
+  logout: () => void;
 }) {
+  const [accountOpen, setAccountOpen] = React.useState(false);
+  const accountRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!accountOpen) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!accountRef.current?.contains(event.target as Node)) setAccountOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAccountOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountOpen]);
   return (
     <aside className={`lifeos-sidebar ${compact ? "compact" : ""}`}>
       {!compact && (
@@ -201,10 +242,10 @@ function Sidebar({
         </div>
       )}
       <nav>
-        {navigation.map((section) => (
+        {navigation.filter(section => section.items.some(item => item.path !== "/settings" || librarian.role === "admin")).map((section) => (
           <div className="nav-section" key={section.label}>
             <p>{section.label}</p>
-            {section.items.map((item) => {
+            {section.items.filter(item => item.path !== "/settings" || librarian.role === "admin").map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -226,9 +267,20 @@ function Sidebar({
           </div>
         ))}
       </nav>
-      <div className="sidebar-foot">
-        <span className="status-dot" />
-        LifeOS tenant connected
+      <div className="sidebar-foot" ref={accountRef}>
+        {accountOpen && <div className="sidebar-account-menu" role="menu">
+          <div className="sidebar-account-details">
+            <strong>{librarian.name}</strong>
+            <span>{librarian.email}</span>
+            <small>{librarian.role}</small>
+          </div>
+          <button role="menuitem" onClick={logout}><LogOut size={17} />Sign out</button>
+        </div>}
+        <button className="sidebar-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" onClick={() => setAccountOpen(open => !open)}>
+          <span className="sidebar-account-avatar">{librarian.name.split(" ").map(part => part[0]).slice(0, 2).join("")}</span>
+          <span className="sidebar-account-label"><strong>{librarian.name}</strong><small>{librarian.role}</small></span>
+          <ChevronRight size={16} className={accountOpen ? "account-chevron open" : "account-chevron"} />
+        </button>
       </div>
     </aside>
   );
@@ -267,10 +319,6 @@ function Topbar({
         >
           {dark ? <Sun size={19} /> : <Moon size={19} />}
         </button>
-        <div className="user-chip">
-          <span>LR</span>
-          <strong>Library Registrar</strong>
-        </div>
       </div>
     </header>
   );
@@ -281,8 +329,8 @@ type DashboardData = {
   peak_hour: number | null;
   visits: ApiVisit[];
 };
-function Dashboard() {
-  const { url, error: qrError, regenerate } = useDailyQr(),
+function Dashboard({editable}:{editable:boolean}) {
+  const { url, error: qrError, regenerate } = useDailyQr(editable),
     [data, setData] = React.useState<DashboardData>({
       check_in_count: 0,
       unique_visitors: 0,
@@ -312,7 +360,7 @@ function Dashboard() {
           hour: "numeric",
         });
   return (
-    <div className="dashboard-grid">
+    <div className={`dashboard-grid${editable ? "" : " dashboard-grid-readonly"}`}>
       <section className="overview-hero">
         <div>
           <span className="eyebrow">Library operations</span>
@@ -337,22 +385,24 @@ function Dashboard() {
           </small>
         </div>
       </section>
-      <Metric
-        label="Check-ins today"
-        value={String(data.check_in_count)}
-        detail="Across all user types"
-      />
-      <Metric
-        label="Unique visitors"
-        value={String(data.unique_visitors)}
-        detail="Recorded today"
-      />
-      <Metric
-        label="Peak check-in hour"
-        value={peak}
-        detail="Highest arrival volume"
-      />
-      <section className="panel qr-panel">
+      <div className="dashboard-metrics">
+        <Metric
+          label="Check-ins today"
+          value={String(data.check_in_count)}
+          detail="Across all user types"
+        />
+        <Metric
+          label="Unique visitors"
+          value={String(data.unique_visitors)}
+          detail="Recorded today"
+        />
+        <Metric
+          label="Peak check-in hour"
+          value={peak}
+          detail="Highest arrival volume"
+        />
+      </div>
+      {editable && <section className="panel qr-panel">
         <div className="panel-title">
           <div>
             <QrCode size={18} />
@@ -391,7 +441,7 @@ function Dashboard() {
         <small>
           Generated automatically each day and replaced at midnight.
         </small>
-      </section>
+      </section>}
       <section className="panel activity-panel">
         <div className="panel-title">
           <div>

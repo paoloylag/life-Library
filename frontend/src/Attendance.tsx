@@ -14,14 +14,14 @@ const apiTypes = [
   ["Visitor", "visitor"],
 ] as const;
 
-export default function Attendance() {
+export default function Attendance({editable}:{editable:boolean}) {
   const [q, setQ] = React.useState(""),
     [type, setType] = React.useState(""),
     [rows, setRows] = React.useState<ApiVisit[]>([]),
     [total, setTotal] = React.useState(0),
     [version, setVersion] = React.useState(0),
     [manual, setManual] = React.useState(
-      () => new URLSearchParams(location.search).get("manual") === "1",
+      () => editable && new URLSearchParams(location.search).get("manual") === "1",
     ),
     [error, setError] = React.useState(""),
     [loading, setLoading] = React.useState(true);
@@ -85,10 +85,10 @@ export default function Attendance() {
               </option>
             ))}
           </select>
-          <button className="manual-button" onClick={() => setManual(true)}>
+          {editable && <button className="manual-button" onClick={() => setManual(true)}>
             <Plus size={17} />
             Manual Check-In
-          </button>
+          </button>}
         </div>
         {error && <p className="module-error">{error}</p>}
         <div className="table-wrap attendance-table">
@@ -139,6 +139,7 @@ export default function Attendance() {
                           ? "Guest QR"
                           : "QR check-in"}
                     </span>
+                    {v.recorded_by && <small>By {v.recorded_by}</small>}
                   </td>
                 </tr>
               ))}
@@ -152,7 +153,7 @@ export default function Attendance() {
           )}
         </div>
       </section>
-      {manual && (
+      {editable && manual && (
         <ManualModal
           close={closeManual}
           saved={() => {
