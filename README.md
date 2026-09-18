@@ -23,7 +23,7 @@ the default for direct, non-container local development.
 
 Set `GOOGLE_SERVICE_ACCOUNT_HOST_FILE` to the local JSON file's absolute path for
 Docker Compose. It is mounted read-only and is not copied into the image. See
-`docs/CURRENT_IMPLEMENTATION.md` for the verified state and Cloud Run checklist.
+`docs/CURRENT_IMPLEMENTATION.md` for the verified implementation state.
 
 ## Database migrations
 
@@ -34,7 +34,7 @@ alembic revision --autogenerate -m "describe the change"
 alembic upgrade head
 ```
 
-API docs: `http://localhost:8000/docs`. Web app: `http://localhost:5173/life-Library/`.
+API docs: `http://localhost:8000/docs`. Web app: `http://localhost:5173/library/`.
 
 
 ## Google authentication
@@ -51,25 +51,46 @@ The QR scan flow uses Google OpenID Connect through FastAPI. Google client secre
 Google Directory classifies `/Students` as students, `/Academics/Faculty` as
 faculty, and all other organizational units as non-teaching personnel.
 
-### Keyless Google Directory access
+### Google Directory JSON credentials
 
-Local development can use `GOOGLE_SERVICE_ACCOUNT_FILE`. Cloud Run should leave
-that value empty and use these settings instead:
+Google Directory access uses a private service-account JSON file with Workspace
+domain-wide delegation. Configure these backend settings:
 
 ```text
-GOOGLE_SERVICE_ACCOUNT_EMAIL=librarian@lci-library-attendance.iam.gserviceaccount.com
+GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service-account.json
 GOOGLE_WORKSPACE_DELEGATED_ADMIN=dt@life.edu.ph
 GOOGLE_DIRECTORY_SCOPE=https://www.googleapis.com/auth/admin.directory.user.readonly
 ```
 
-Attach the service account to the Cloud Run service, enable the IAM Service Account
-Credentials API, and grant the runtime identity `roles/iam.serviceAccountTokenCreator`
-on that service account. The application then signs a short-lived delegated JWT with
-Google IAM; no private key is stored in the deployed container.
+For Docker, set `GOOGLE_SERVICE_ACCOUNT_HOST_FILE` to the Windows host path. Compose
+mounts it read-only at `/run/secrets/google-service-account.json` and sets
+`GOOGLE_SERVICE_ACCOUNT_FILE` inside the container. Never commit or copy the JSON
+into an image.
+
+For an AWS-hosted backend, set `GOOGLE_SERVICE_ACCOUNT_SECRET_ID` to the
+Secrets Manager ARN and `AWS_REGION` to its region. The Python process fetches
+the JSON in memory using its IAM task role; the role needs `secretsmanager:GetSecretValue`
+for that ARN. If both the ARN and local file are set, the ARN takes precedence.
+The local Compose configuration still requires `GOOGLE_SERVICE_ACCOUNT_HOST_FILE`
+and mounts the file for development. Do not put the JSON in an ECS environment
+variable or Docker image.
+
+Current ECS backend values:
+
+```text
+AWS_REGION=ap-southeast-1
+GOOGLE_SERVICE_ACCOUNT_SECRET_ID=arn:aws:secretsmanager:ap-southeast-1:165115313524:secret:library/google-service-account-hM92ky
+GOOGLE_WORKSPACE_DELEGATED_ADMIN=dt@life.edu.ph
+```
+
+Assign `life-library-backend-task-role` as the ECS **task role**. Its inline
+policy must allow `secretsmanager:GetSecretValue` for this exact ARN. The
+separate `ecsTaskExecutionRole` is for ECS image pulls and logs; it does not
+provide credentials to Python code inside the container.
 
 ## Local QR check-in test
 
-1. Open the QR display at `http://localhost:5173/life-Library/qr-display`.
+1. Open the QR display at `http://localhost:5173/library/qr-display`.
 2. Scan the code from a phone on the same Wi-Fi network.
 3. On the verification page, choose **Use local test account**.
 4. Confirm the displayed QR Test Student identity and select **Record library check-in**.

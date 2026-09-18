@@ -1,7 +1,6 @@
 import React from 'react'
 import {AlertCircle, Check, CheckCircle2, Clock3, LoaderCircle, LogIn, ShieldCheck, UserRound} from 'lucide-react'
 import {SeedUser, UserType} from './data'
-import {loadSettings} from './settings'
 
 const BASE=import.meta.env.BASE_URL
 const configuredApi=(import.meta.env.VITE_API_URL||'').replace(/\/$/,'')
@@ -11,7 +10,6 @@ const api=(path:string)=>configuredApi+path
 type AuthProfile={number:string;user_type:string;program:string;year_level:string;section:string;department:string}
 type AuthUser={id:number;name:string;email:string;role:string;avatar_url?:string;profile:AuthProfile|null}
 type Result={action:'check_in'|'duplicate';at:string;user:SeedUser;organization?:string;purpose?:string;reference:string}
-type LastScan={lastScan:string}
 const labels:Record<UserType,string>={Student:'Student',Faculty:'Faculty','Non-Teaching':'Non-teaching',Visitor:'Visitor'}
 
 function profileUser(user:AuthUser):SeedUser|null{
@@ -22,7 +20,7 @@ function profileUser(user:AuthUser):SeedUser|null{
 }
 
 export default function ScanPage(){
- const settings=loadSettings(),params=new URLSearchParams(location.search),expires=Number(params.get('expires')||0)
+ const params=new URLSearchParams(location.search),expires=Number(params.get('expires')||0)
  const expired=Boolean(expires&&expires<Date.now())
  const[guestMode,setGuestMode]=React.useState(false)
  const[visitor,setVisitor]=React.useState({name:'',organization:'',purpose:''})
@@ -46,16 +44,15 @@ export default function ScanPage(){
   return()=>{clearTimeout(timeout);controller.abort()}
  },[])
 
- function recordVisitor(user:SeedUser,extra:{organization:string;purpose:string}){
-  setLoading(true);setTimeout(()=>{
-   const now=new Date(),key='scan-last-'+user.number,stored=JSON.parse(localStorage.getItem(key)||'null') as LastScan|null
-   const duplicate=stored&&(now.getTime()-new Date(stored.lastScan).getTime())<settings.duplicateWindowMinutes*60000
-   const action:Result['action']=duplicate?'duplicate':'check_in'
-   if(!duplicate)localStorage.setItem(key,JSON.stringify({lastScan:now.toISOString()}))
-   const receipt={action,at:now.toISOString(),user,...extra,reference:'LC-'+now.getFullYear()+'-'+String(now.getTime()).slice(-6)} as Result
-   const history=JSON.parse(localStorage.getItem('scan-history')||'[]');history.unshift(receipt);localStorage.setItem('scan-history',JSON.stringify(history.slice(0,100)))
-   setResult(receipt);setLoading(false)
-  },700)
+ async function recordVisitor(user:SeedUser,extra:{organization:string;purpose:string}){
+  if(!token)return
+  setLoading(true);setError('')
+  try{
+   const response=await fetch(api('/api/library/scan/'+encodeURIComponent(token)+'/guest'),{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:user.name,organization:extra.organization,purpose:extra.purpose})})
+   const body=await response.json().catch(()=>({}))
+   if(!response.ok)throw new Error(body.detail||'The guest check-in could not be recorded.')
+   setResult({action:body.action,at:body.check_in_time,user:{...user,number:body.user_number},...extra,reference:body.reference})
+  }catch(reason){setError(reason instanceof Error?reason.message:'The guest check-in could not be recorded.')}finally{setLoading(false)}
  }
 
  function startGoogle(){

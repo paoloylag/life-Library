@@ -56,9 +56,9 @@ PROJECT_MANIFEST.md          Product and implementation inventory
 
 | Module | Current capability | Data status |
 | --- | --- | --- |
-| Dashboard | Daily metrics, recent activity, QR generation, QR display, manual check-in entry point | Seeded/local browser state |
-| Attendance | Check-in-only attendance list, filters, manual check-in with automatic or manual date/time | Seeded/local browser state |
-| Students | Searchable user directory and individual visit-history pages | Seeded/local browser state |
+| Dashboard | Daily metrics, recent activity, QR generation, QR display, manual check-in entry point | PostgreSQL through FastAPI |
+| Attendance | Check-in-only attendance list, filters, manual check-in with automatic or manual date/time | PostgreSQL through FastAPI |
+| Students | Searchable user directory and individual visit-history pages | PostgreSQL through FastAPI |
 | Reports | Date and organization filters, executive summary, breakdowns, charts, Excel export, PDF export | Seeded/local browser state |
 | Settings | Library details, QR behavior, attendance rules, academic calendar, school structure | Local browser state |
 | QR scan | Token/expiry handling and user-type-aware success presentation | Prototype flow |
@@ -95,6 +95,12 @@ PROJECT_MANIFEST.md          Product and implementation inventory
 | `POST` | `/api/library/sessions` | Create or replace the active daily QR session |
 | `POST` | `/api/library/scan/{token}` | Record an authenticated check-in |
 | `GET` | `/api/library/dashboard` | Return today's visit summary |
+| `GET` | `/api/library/users` | Search, filter, sort, and paginate the library-user roster |
+| `GET` | `/api/library/users/{number}` | Return one library-user profile |
+| `GET` | `/api/library/users/{number}/visits` | Return one user's visit history |
+| `GET` | `/api/library/attendance` | Search and paginate the persistent attendance log |
+| `POST` | `/api/library/attendance/manual` | Record a librarian manual check-in |
+| `POST` | `/api/library/scan/{token}/guest` | Record a visitor from a valid daily QR |
 
 ### Database entities
 
@@ -164,11 +170,11 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Manual check-in interface | Implemented in frontend |
 | Student visit pages | Implemented with seeded data |
 | Reports, charts, Excel, and PDF | Implemented with seeded data |
-| Persistent PostgreSQL attendance | Backend scaffold; frontend integration pending |
+| Persistent PostgreSQL attendance | Dashboard, Attendance, and Library Users integrated |
 | Librarian login screen/session enforcement | Backend scaffold; UI currently intentionally bypassed |
 | Google SSO check-in | Frontend and backend integrated; credentials, roster profiles, and backend deployment pending |
 | Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
-| Production QR token validation | Backend scaffold; frontend currently generates the daily token in-browser |
+| Production QR token validation | Backend-issued token used by authenticated and guest check-ins |
 | Server-backed settings | Pending |
 | Deployment of API/database | Pending |
 | Automated backend tests and migrations | Pending |

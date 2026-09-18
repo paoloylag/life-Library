@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.config import settings
-from app.models import LibrarySession, LibraryVisit, StudentProfile
+from app.models import LibrarySession, LibraryVisit, StudentProfile, User
 
 MANILA = ZoneInfo("Asia/Manila")
 
@@ -37,7 +37,11 @@ def utc_bounds(day: date) -> tuple[datetime, datetime]:
 
 
 def aware_utc(value: datetime) -> datetime:
-    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+    return (
+        value.replace(tzinfo=timezone.utc)
+        if value.tzinfo is None
+        else value.astimezone(timezone.utc)
+    )
 
 
 async def get_or_create_daily_session(db, now: datetime | None = None):
@@ -105,7 +109,11 @@ async def scan(db, token, user):
         .order_by(LibraryVisit.time_in.desc())
         .limit(1)
     )
-    if latest and (now - aware_utc(latest.time_in)).total_seconds() < settings.duplicate_scan_seconds:
+    if (
+        latest
+        and (now - aware_utc(latest.time_in)).total_seconds()
+        < settings.duplicate_scan_seconds
+    ):
         return "duplicate", latest
 
     visit = LibraryVisit(
@@ -119,3 +127,44 @@ async def scan(db, token, user):
     await db.commit()
     await db.refresh(visit)
     return "check_in", visit
+
+
+async def valid_session_for_token(db, token: str, now: datetime | None = None):
+    now = now or datetime.now(timezone.utc)
+    session = await db.scalar(
+        select(LibrarySession)
+        .where(LibrarySession.token_hash == token_hash(token))
+        .with_for_update()
+    )
+    if (
+        not session
+        or session.status != "open"
+        or not aware_utc(session.starts_at) <= now <= aware_utc(session.expires_at)
+    ):
+        raise HTTPException(410, "QR code is invalid or expired")
+    return session
+
+
+async def create_visitor_profile(db, name: str, organization: str | None = None):
+    import secrets
+
+    code = f"VIS-{attendance_day().year}-{secrets.token_hex(3).upper()}"
+    user = User(
+        email=f"{code.lower()}@visitor.local",
+        name=name.strip(),
+        role="visitor",
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    profile = StudentProfile(
+        user_id=user.id,
+        student_number=code,
+        user_type="visitor",
+        department="External Visitor",
+        organization=(organization or "").strip() or None,
+        is_active=True,
+    )
+    db.add(profile)
+    await db.flush()
+    return profile

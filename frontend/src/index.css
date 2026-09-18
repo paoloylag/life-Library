@@ -278,3 +278,9 @@
 .guest-toggle{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:14px;border:0;background:transparent;color:#690f0d;padding:7px;font-size:12px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
 .guest-toggle:hover{color:#9e1d20}
 .scan-form .guest-toggle{margin-top:-4px}
+
+.module-state{margin:0;padding:24px;color:var(--muted);text-align:center;font-size:13px}
+.module-error{margin:0 0 14px;border-left:3px solid var(--crimson);border-radius:6px;background:color-mix(in srgb,var(--crimson) 8%,var(--panel));color:var(--text);padding:10px 12px;font-size:12px}
+.manual-form .module-error.wide{grid-column:1/-1}
+.module-filters .manual-button{flex:none;margin-left:auto}
+@media(max-width:700px){.module-filters .manual-button{width:100%;margin-left:0;justify-content:center}}
