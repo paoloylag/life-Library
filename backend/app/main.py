@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
 from authlib.integrations.starlette_client import OAuth
@@ -23,6 +23,8 @@ from app.config import settings
 from app.database import get_db, init_database
 from app.google_directory import lookup_directory_identity
 from app.models import Librarian, LibrarySession, LibraryVisit, StudentProfile, User
+from app.report_exports import export_excel, export_pdf
+from app.reports import ReportFilters, build_report
 from app.services import (
     MANILA,
     attendance_day,
@@ -640,3 +642,60 @@ async def dashboard(librarian=Depends(librarian_or_development), db=Depends(get_
         "peak_hour": peak_hour,
         "visits": [visit_json(visit) for visit in rows[:20]],
     }
+
+
+def report_filters(
+    date_from: date | None = None,
+    date_to: date | None = None,
+    academic_year: str = "All",
+    semester: str = "All",
+    grouping: str = "Monthly",
+    user_type: str = "All",
+    year_level: str = "All",
+    section: str = "All",
+    program: str = "All",
+    department: str = "All",
+) -> ReportFilters:
+    return ReportFilters(
+        date_from=date_from, date_to=date_to, academic_year=academic_year,
+        semester=semester, grouping=grouping, user_type=user_type,
+        year_level=year_level, section=section, program=program,
+        department=department,
+    )
+
+
+@app.get("/api/library/reports")
+async def library_report(
+    filters: ReportFilters = Depends(report_filters),
+    librarian=Depends(librarian_or_development),
+    db=Depends(get_db),
+):
+    return await build_report(db, filters)
+
+
+@app.get("/api/library/reports/export.xlsx")
+async def library_report_excel(
+    filters: ReportFilters = Depends(report_filters),
+    librarian=Depends(librarian_or_development),
+    db=Depends(get_db),
+):
+    report = await build_report(db, filters)
+    return Response(
+        content=export_excel(report),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="life-college-library-report.xlsx"'},
+    )
+
+
+@app.get("/api/library/reports/export.pdf")
+async def library_report_pdf(
+    filters: ReportFilters = Depends(report_filters),
+    librarian=Depends(librarian_or_development),
+    db=Depends(get_db),
+):
+    report = await build_report(db, filters)
+    return Response(
+        content=export_pdf(report),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="life-college-library-report.pdf"'},
+    )

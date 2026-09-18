@@ -23,6 +23,29 @@ Last verified: September 18, 2026
   complete visit histories.
 - Development Docker startup applies deterministic roster and attendance seeds;
   production startup never seeds data.
+- Reports now read filtered attendance from FastAPI/PostgreSQL rather than the
+  frontend seed store. The Reports view, Excel workbook, and PDF use the same
+  backend aggregation and filters.
+- Report endpoints are `GET /api/library/reports`,
+  `GET /api/library/reports/export.xlsx`, and
+  `GET /api/library/reports/export.pdf`. They require the librarian session in
+  production; local development follows the existing development bypass.
+- Exports include executive statistics, categories, student breakdowns,
+  attendance trends, peak hours, semester comparisons, and filtered check-ins.
+  Excel has sized columns, branded headers, and charts; PDF has charts and tables.
+
+## Reporting calendar and limitations
+
+- Academic year begins on the first weekday of August. First semester is
+  August-December; second semester is January-May. Dates outside those windows
+  are labeled Outside Semester.
+- Student open days are Tuesday-Friday, 9:00-18:00. Staff open days are
+  Monday-Friday, 7:00-17:00. For a mixed-user report, the open-day denominator
+  uses Monday-Friday. Holiday closures are not yet excluded.
+- Historical program, year-level, section, and department reports use the
+  user's current profile because visits do not yet store a profile snapshot.
+- Average weekly and monthly visits divide by calendar weeks and months in the
+  selected date range. Average daily visits divide by scheduled open days.
 
 ## Google Directory credentials
 
