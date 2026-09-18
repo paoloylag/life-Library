@@ -15,6 +15,10 @@ export const defaultSettings: LibrarySettings = {
   defaultReportPeriod:'Monthly',defaultReportUserType:'All',retentionYears:5,qrHeading:'Scan to record your visit',
   qrInstructions:'Use your school Google account to verify your identity and record your library check-in.'
 }
-export function loadSettings(): LibrarySettings {try{const saved=JSON.parse(localStorage.getItem('library-settings')||'{}');if(saved.qrInstructions==='Use your school Google account to verify your identity. Scan once when entering and again when leaving.')delete saved.qrInstructions;return {...defaultSettings,...saved}}catch{return defaultSettings}}
-export function saveSettings(settings:LibrarySettings){localStorage.setItem('library-settings',JSON.stringify(settings));const audit=JSON.parse(localStorage.getItem('settings-audit')||'[]');audit.unshift({id:crypto.randomUUID(),action:'Settings updated',user:'Library Registrar',at:new Date().toISOString()});localStorage.setItem('settings-audit',JSON.stringify(audit.slice(0,20)));dispatchEvent(new CustomEvent('library-settings-changed'))}
+import {apiRequest} from './api'
+export type SettingsAudit = {id:string;action:string;user:string;at:string}
+export type SettingsResponse = {settings:LibrarySettings;audit:SettingsAudit[];configured:boolean}
+export const getLibrarySettings = () => apiRequest<SettingsResponse>('/api/library/settings')
+export const saveLibrarySettings = (settings:LibrarySettings) => apiRequest<SettingsResponse>('/api/library/settings',{method:'PUT',body:JSON.stringify(settings)})
+export const getDisplaySettings = () => apiRequest<Pick<LibrarySettings,'libraryName'|'qrHeading'|'qrInstructions'>>('/api/library/settings/display')
 

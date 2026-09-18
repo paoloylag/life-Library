@@ -22,7 +22,8 @@ from app.auth import (
 from app.config import settings
 from app.database import get_db, init_database
 from app.google_directory import lookup_directory_identity
-from app.models import Librarian, LibrarySession, LibraryVisit, StudentProfile, User
+from app.library_settings import LibrarySettings, read_library_settings, save_library_settings, settings_audit
+from app.models import Librarian, LibraryConfiguration, LibrarySession, LibraryVisit, StudentProfile, User
 from app.report_exports import export_excel, export_pdf
 from app.reports import ReportFilters, build_report
 from app.services import (
@@ -155,6 +156,38 @@ async def auth_status():
             settings.google_client_id and settings.google_client_secret
         ),
         "allowed_domain": settings.google_allowed_domain,
+    }
+
+
+@app.get("/api/library/settings")
+async def get_library_settings(
+    librarian=Depends(librarian_or_development), db=Depends(get_db),
+):
+    row = await db.get(LibraryConfiguration, 1)
+    return {
+        "settings": (await read_library_settings(db)).model_dump(),
+        "audit": await settings_audit(db),
+        "configured": row is not None,
+    }
+
+
+@app.put("/api/library/settings")
+async def put_library_settings(
+    payload: LibrarySettings,
+    librarian=Depends(librarian_or_development),
+    db=Depends(get_db),
+):
+    await save_library_settings(db, payload, librarian.name if librarian else "Development librarian")
+    return {"settings": payload.model_dump(), "audit": await settings_audit(db), "configured": True}
+
+
+@app.get("/api/library/settings/display")
+async def get_library_display_settings(db=Depends(get_db)):
+    values = await read_library_settings(db)
+    return {
+        "libraryName": values.libraryName,
+        "qrHeading": values.qrHeading,
+        "qrInstructions": values.qrInstructions,
     }
 
 

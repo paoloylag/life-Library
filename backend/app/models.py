@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -79,3 +79,18 @@ class LibraryVisit(Base):
     purpose: Mapped[str | None] = mapped_column(String(180))
     student: Mapped[StudentProfile] = relationship()
     session: Mapped[LibrarySession] = relationship()
+
+
+class LibraryConfiguration(Base):
+    __tablename__ = "library_configuration"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    values: Mapped[dict] = mapped_column(JSON, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class LibrarySettingsAudit(Base):
+    __tablename__ = "library_settings_audit"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    action: Mapped[str] = mapped_column(String(120))
+    actor: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

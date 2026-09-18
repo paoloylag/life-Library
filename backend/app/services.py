@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.config import settings
+from app.library_settings import read_library_settings
 from app.models import LibrarySession, LibraryVisit, StudentProfile, User
 
 MANILA = ZoneInfo("Asia/Manila")
@@ -109,10 +110,11 @@ async def scan(db, token, user):
         .order_by(LibraryVisit.time_in.desc())
         .limit(1)
     )
+    library_settings = await read_library_settings(db)
     if (
         latest
         and (now - aware_utc(latest.time_in)).total_seconds()
-        < settings.duplicate_scan_seconds
+        < library_settings.duplicateWindowMinutes * 60
     ):
         return "duplicate", latest
 

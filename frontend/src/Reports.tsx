@@ -1,7 +1,7 @@
 import React from 'react'
 import {Download, Filter} from 'lucide-react'
 import {API, apiRequest} from './api'
-import {loadSettings} from './settings'
+import {defaultSettings, getLibrarySettings} from './settings'
 
 type Filters = {dateFrom:string;dateTo:string;academicYear:string;semester:string;grouping:string;userType:string;yearLevel:string;section:string;program:string;department:string}
 type Item = {label:string;value:number}
@@ -27,9 +27,9 @@ function Bars({items}: {items:Item[]}){
  return <div className="report-bars">{shown.length?shown.map(item=><div key={item.label}><span title={item.label}>{item.label}</span><strong>{item.value}</strong><i><b style={{width:`${item.value/max*100}%`}}/></i></div>):<p>No records</p>}</div>
 }
 export default function Reports(){
- const settings=React.useMemo(loadSettings,[])
- const initial=React.useMemo<Filters>(()=>({dateFrom:'',dateTo:'',academicYear:'All',semester:'All',grouping:settings.defaultReportPeriod,userType:'All',yearLevel:'All',section:'All',program:'All',department:'All'}),[settings])
+ const initial=React.useMemo<Filters>(()=>({dateFrom:'',dateTo:'',academicYear:'All',semester:'All',grouping:defaultSettings.defaultReportPeriod,userType:'All',yearLevel:'All',section:'All',program:'All',department:'All'}),[])
  const [filters,setFilters]=React.useState(initial)
+ React.useEffect(()=>{let active=true;getLibrarySettings().then(value=>{if(active)setFilters(current=>({...current,grouping:value.settings.defaultReportPeriod,userType:value.settings.defaultReportUserType}))}).catch(()=>{});return()=>{active=false}},[])
  const [report,setReport]=React.useState<Report|null>(null)
  const [loading,setLoading]=React.useState(true)
  const [error,setError]=React.useState('')

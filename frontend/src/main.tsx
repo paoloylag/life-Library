@@ -25,7 +25,7 @@ import Attendance from "./Attendance";
 import SettingsPage from "./SettingsPage";
 import ScanPage from "./ScanPage";
 import { apiRequest, ApiVisit } from "./api";
-import { loadSettings } from "./settings";
+import { defaultSettings, getDisplaySettings } from "./settings";
 import "./index.css";
 
 const BASE = import.meta.env.BASE_URL;
@@ -444,8 +444,17 @@ function Dashboard() {
   );
 }
 function QrDisplay({ close }: { close: () => void }) {
-  const settings = loadSettings(),
-    { url } = useDailyQr();
+  const [settings, setSettings] = React.useState(defaultSettings);
+  const { url } = useDailyQr();
+  React.useEffect(() => {
+    let active = true;
+    getDisplaySettings()
+      .then((value) => {
+        if (active) setSettings((current) => ({ ...current, ...value }));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
   const [isFullscreen, setIsFullscreen] = React.useState(
     Boolean(document.fullscreenElement),
   );

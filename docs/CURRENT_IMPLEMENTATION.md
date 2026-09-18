@@ -47,6 +47,22 @@ Last verified: September 18, 2026
 - Average weekly and monthly visits divide by calendar weeks and months in the
   selected date range. Average daily visits divide by scheduled open days.
 
+## Library settings
+
+- Settings and their audit history are now stored in the backend database.
+  Production reads and writes require a librarian session. Local development
+  follows the existing librarian-auth bypass.
+- The Settings page loads and saves through `/api/library/settings`. If the
+  backend has no saved settings, it offers browser-saved values for a one-time
+  manual save to the shared backend. Browser storage is cleared only after
+  that save succeeds.
+- The QR display reads only its public wording from
+  `/api/library/settings/display`. QR duplicate prevention uses the saved
+  scan window. Reports use the saved initial grouping and user-type filter.
+- Opening hours, timezone, current term, school reference lists, planned
+  librarian roles, visitor fields, and retention years are stored but are not
+  yet enforced by attendance, account provisioning, or automatic deletion.
+
 ## Google Directory credentials
 
 The backend uses the locally stored service-account JSON and impersonates
