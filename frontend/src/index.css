@@ -50,6 +50,7 @@
 .dark .reports-page option{background:#191d25;color:#f8fafc}
 .report-reset{color:var(--maroon)}.dark .report-reset{color:#ffb4ad}
 .dark .report-dashboard article{border-color:var(--line);background:var(--panel);color:var(--text)}
+.dark .report-metric>strong{color:var(--heading)}
 .dark .report-dashboard article>p,.dark .chart-labels{color:var(--muted)}
 .dark .line-chart{border-color:var(--line);background:repeating-linear-gradient(to bottom,var(--panel) 0,var(--panel) 56px,#252b35 57px)}
 .dark .line-chart circle{fill:var(--panel)}
@@ -411,6 +412,16 @@
   .directory-data-actions>summary{width:100%;justify-content:center}
   .directory-data-menu{right:auto;left:0;width:min(280px,calc(100vw - 48px))}
 }
+
+/* Keep report records visually identical to the shared application tables. */
+.report-records .report-table-wrap table{font-size:13px}
+.report-records .report-table-wrap th,.report-records .report-table-wrap td{padding:11px}
+.report-records .report-table-wrap th{z-index:1;background:var(--panel);font-size:11px}
+.report-records .report-table-wrap tbody tr{background:var(--panel)}
+.report-records .report-table-wrap tbody tr:hover{background:color-mix(in srgb,var(--muted) 5%,var(--panel))}
+.dark .report-records .report-table-wrap th{background:#222733;color:#c3cad5}
+.dark .report-records .report-table-wrap tbody tr{background:var(--panel)}
+.dark .report-records .report-table-wrap tbody tr:hover{background:#222833}
 
 /* iPad-first application layout and predictable small-screen overflow. */
 .scan-page{min-width:0;width:100%;overflow-x:hidden}

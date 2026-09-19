@@ -2,7 +2,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
-  Bell,
   ChevronRight,
   Clock3,
   LayoutDashboard,
@@ -12,7 +11,6 @@ import {
   Minimize2,
   Moon,
   QrCode,
-  Search,
   Settings,
   Sun,
   UserPlus,
@@ -155,14 +153,9 @@ function App() {
             : "Dashboard";
   return (
     <div className={`lifeos-shell ${dark ? "dark" : ""}`}>
-      <Sidebar path={path} navigate={navigate} librarian={librarian} logout={logout} />
+      <Sidebar path={path} navigate={navigate} librarian={librarian} logout={logout} dark={dark} setDark={setDark} />
       <div className="lifeos-workspace">
-        <Topbar
-          title={title}
-          dark={dark}
-          setDark={setDark}
-          open={() => setDrawer(true)}
-        />
+        <Topbar title={title} open={() => setDrawer(true)} />
         <main className="lifeos-content">
           {path === "/reports" ? (
             <Reports />
@@ -193,7 +186,7 @@ function App() {
               <X size={20} />
             </button>
           </div>
-          <Sidebar path={path} navigate={navigate} compact librarian={librarian} logout={logout} />
+          <Sidebar path={path} navigate={navigate} compact librarian={librarian} logout={logout} dark={dark} setDark={setDark} />
         </div>
       )}
     </div>
@@ -218,12 +211,16 @@ function Sidebar({
   compact = false,
   librarian,
   logout,
+  dark,
+  setDark,
 }: {
   path: string;
   navigate: (p: string) => void;
   compact?: boolean;
   librarian: LibrarianSession;
   logout: () => void;
+  dark: boolean;
+  setDark: (value: boolean) => void;
 }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [devAccounts, setDevAccounts] = React.useState<{role:string;name:string;email:string;password:string}[]>([]);
@@ -307,6 +304,7 @@ function Sidebar({
             </select>
           </label>}
           {switchError && <small className="sidebar-switch-error" role="alert">{switchError}</small>}
+          <button role="menuitem" onClick={() => setDark(!dark)}>{dark ? <Sun size={17} /> : <Moon size={17} />}{dark ? "Light mode" : "Dark mode"}</button>
           <button role="menuitem" onClick={logout}><LogOut size={17} />Sign out</button>
         </div>}
         <button className="sidebar-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" onClick={() => setAccountOpen(open => !open)}>
@@ -320,13 +318,9 @@ function Sidebar({
 }
 function Topbar({
   title,
-  dark,
-  setDark,
   open,
 }: {
   title: string;
-  dark: boolean;
-  setDark: (v: boolean) => void;
   open: () => void;
 }) {
   return (
@@ -336,22 +330,6 @@ function Topbar({
       </button>
       <div>
         <h1>{title}</h1>
-      </div>
-      <div className="top-actions">
-        <label className="search">
-          <Search size={17} />
-          <input placeholder="Search" />
-        </label>
-        <button className="icon-button" title="Notifications">
-          <Bell size={19} />
-        </button>
-        <button
-          className="icon-button"
-          title="Theme"
-          onClick={() => setDark(!dark)}
-        >
-          {dark ? <Sun size={19} /> : <Moon size={19} />}
-        </button>
       </div>
     </header>
   );
