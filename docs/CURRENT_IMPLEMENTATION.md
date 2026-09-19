@@ -1,6 +1,6 @@
 # Current Implementation Status
 
-Last verified: September 18, 2026
+Last verified: September 19, 2026
 
 ## Implemented and verified
 
@@ -8,7 +8,11 @@ Last verified: September 18, 2026
 - Docker Compose starts PostgreSQL 16 and the API with health checks.
 - PostgreSQL data persists in a named Docker volume.
 - Alembic applies the initial attendance schema before the API starts.
-- Direct local development continues to use SQLite by default.
+- Direct local development uses PostgreSQL. The retained SQLite demo dataset was
+  imported with its 16 users, 31 sessions, 85 visits, four staff accounts, and
+  saved settings; the source database remains available as a rollback copy.
+- `python -m app.migrate_sqlite_to_postgres` provides a guarded, transactional
+  path for importing a SQLite dataset after Alembic creates the target schema.
 - Google OpenID Connect authenticates Life College accounts.
 - Google Directory API reads each Workspace user's organizational unit.
 - `/Students` maps to Student.
@@ -27,6 +31,9 @@ Last verified: September 18, 2026
   email, number, and category are not manually editable.
 - Development Docker startup applies deterministic roster and attendance seeds;
   production startup never seeds data.
+- Production roster tooling supports CSV validation, dry runs, and create/update
+  imports without overriding Google-managed identity fields. The first real
+  Librarian can be created in a one-off task using a secret-backed password.
 - Reports now read filtered attendance from FastAPI/PostgreSQL rather than the
   frontend seed store. The Reports view, Excel workbook, and PDF use the same
   backend aggregation and filters.
@@ -110,6 +117,10 @@ current secret). The backend image has been built, smoke-tested, and pushed to
 ECR as `165115313524.dkr.ecr.ap-southeast-1.amazonaws.com/life-library-backend:secrets-manager-20260918`.
 The ECS service is not running yet; production database, OAuth, URL, and other
 secret settings are still required before launch.
+
+The production database launch and restore process is documented in
+`docs/PRODUCTION_DATABASE_RUNBOOK.md`. AWS access has been verified, but managed
+RDS provisioning is intentionally paused until production deployment resumes.
 
 ## Secrets
 

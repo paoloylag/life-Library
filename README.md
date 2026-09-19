@@ -4,9 +4,16 @@ Independent FastAPI + React implementation. The `lifetrack-l12` repository is re
 
 See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architecture, implementation status, routes, deployment model, and MVP priorities.
 
+Production database launch and recovery steps are documented in
+[docs/PRODUCTION_DATABASE_RUNBOOK.md](docs/PRODUCTION_DATABASE_RUNBOOK.md).
+
+All implemented backend routes, request fields, permissions, and local test URLs
+are documented in [docs/API_REFERENCE.md](docs/API_REFERENCE.md).
+
 ## Local setup
 
-1. Copy `.env.example` to `.env`; SQLite is the default zero-setup development database.
+1. Copy `.env.example` to `.env` and configure `DATABASE_URL`. The maintained local
+   dataset uses PostgreSQL; SQLite is supported only for isolated tests.
 2. In `backend`, run `pip install -e ".[dev]"` and `alembic upgrade head`.
 3. Create a real librarian account with `python -m app.create_librarian`, or set
    `ENABLE_DEV_LIBRARIANS=true` only for an isolated local test server.
@@ -25,8 +32,11 @@ production. Never enable them on a network-exposed server.
 3. Run `docker compose up --build`.
 
 Compose starts PostgreSQL on port `5432` and the FastAPI service on port `8000`.
-The API container runs `alembic upgrade head` before starting Uvicorn. SQLite remains
-the default for direct, non-container local development.
+The API container runs `alembic upgrade head` before starting Uvicorn.
+
+To move an existing SQLite development dataset into an empty migrated PostgreSQL
+database, run `python -m app.migrate_sqlite_to_postgres path/to/source.db` from
+`backend`. Add `--replace` only when the target data should be overwritten.
 
 Set `GOOGLE_SERVICE_ACCOUNT_HOST_FILE` to the local JSON file's absolute path for
 Docker Compose. It is mounted read-only and is not copied into the image. See

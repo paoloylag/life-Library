@@ -176,13 +176,13 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
 | Production QR token validation | Backend-issued token used by authenticated and guest check-ins |
 | Server-backed settings | Implemented; some stored policies await enforcement |
-| Deployment of API/database | Pending |
-| User/profile administration | Librarian create/edit implemented; bulk roster import pending |
+| Deployment of API/database | Local PostgreSQL verified; managed production database and API deployment pending |
+| User/profile administration | Librarian create/edit and validated CSV roster import implemented |
 | Automated backend tests and migrations | Implemented locally; CI workflow added, remote run pending |
 
 ## MVP Completion Priorities
 
-1. Add database migrations and seed/import tooling.
+1. Provision the managed production PostgreSQL database and apply the verified migrations.
 2. Connect dashboard, attendance, students, and reports to FastAPI.
 3. Implement the backend manual check-in endpoint with audit metadata.
 4. Complete librarian login UI and protect administrative routes.
