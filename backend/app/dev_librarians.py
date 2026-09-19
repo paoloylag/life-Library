@@ -9,8 +9,8 @@ from app.models import Librarian
 DEV_ACCOUNTS = [
     {"role": role, "name": name, "email": f"{role}@dev.library.local", "password": secrets.token_urlsafe(15)}
     for role, name in (
-        ("admin", "Development Administrator"),
         ("librarian", "Development Librarian"),
+        ("librarian_associate", "Development Librarian Associate"),
         ("auditor", "Development Auditor"),
     )
 ]

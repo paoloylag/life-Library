@@ -23,8 +23,9 @@ import { QRCodeSVG } from "qrcode.react";
 import Reports from "./Reports";
 import Students, { StudentDetail } from "./Students";
 import Attendance from "./Attendance";
+import StaffAccounts from "./StaffAccounts";
 import SettingsPage from "./SettingsPage";
-import LoginPage, { LibrarianSession } from "./LoginPage";
+import LoginPage, { LibrarianSession, staffRoleName } from "./LoginPage";
 import ScanPage from "./ScanPage";
 import { apiRequest, ApiVisit } from "./api";
 import { defaultSettings, getDisplaySettings } from "./settings";
@@ -96,7 +97,10 @@ const navigation = [
   },
   {
     label: "Administration",
-    items: [{ label: "Settings", path: "/settings", icon: Settings }],
+    items: [
+      { label: "Staff Accounts", path: "/accounts", icon: Users },
+      { label: "Settings", path: "/settings", icon: Settings },
+    ],
   },
 ];
 function App() {
@@ -142,6 +146,8 @@ function App() {
       ? "Reports"
       : path === "/attendance"
         ? "Attendance"
+      : path === "/accounts"
+        ? "Staff Accounts"
         : path.startsWith("/students")
           ? "Students"
           : path === "/settings"
@@ -165,11 +171,13 @@ function App() {
               number={decodeURIComponent(path.slice("/students/".length))}
             />
           ) : path === "/students" ? (
-            <Students canManage={librarian.role === "admin"} />
+            <Students canManage={librarian.role === "librarian"} />
           ) : path === "/attendance" ? (
             <Attendance editable={librarian.role !== "auditor"} />
           ) : path === "/settings" ? (
-            librarian.role === "admin" ? <SettingsPage /> : <p role="alert">Administrator permission required.</p>
+            librarian.role === "librarian" ? <SettingsPage /> : <p role="alert">Librarian permission required.</p>
+          ) : path === "/accounts" ? (
+            librarian.role !== "auditor" ? <StaffAccounts current={librarian} /> : <p role="alert">Staff account permission required.</p>
           ) : path === "/" ? (
             <Dashboard editable={librarian.role !== "auditor"} />
           ) : (
@@ -218,7 +226,25 @@ function Sidebar({
   logout: () => void;
 }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
+  const [devAccounts, setDevAccounts] = React.useState<{role:string;name:string;email:string;password:string}[]>([]);
+  const [switchError, setSwitchError] = React.useState("");
   const accountRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    apiRequest<{accounts:typeof devAccounts}>("/api/admin/dev-accounts")
+      .then(result => setDevAccounts(result.accounts)).catch(() => setDevAccounts([]));
+  }, []);
+  async function switchDevRole(role: string) {
+    const account = devAccounts.find(item => item.role === role);
+    if (!account) return;
+    setSwitchError("");
+    try {
+      await apiRequest("/api/admin/login", {method:"POST", body:JSON.stringify({email:account.email,password:account.password})});
+      location.assign(href("/"));
+    } catch (reason) {
+      setSwitchError(reason instanceof Error ? reason.message : "Unable to switch role");
+    }
+  }
   React.useEffect(() => {
     if (!accountOpen) return;
     const closeOnOutside = (event: PointerEvent) => {
@@ -242,10 +268,10 @@ function Sidebar({
         </div>
       )}
       <nav>
-        {navigation.filter(section => section.items.some(item => item.path !== "/settings" || librarian.role === "admin")).map((section) => (
+        {navigation.filter(section => section.items.some(item => (item.path !== "/settings" || librarian.role === "librarian") && (item.path !== "/accounts" || librarian.role !== "auditor"))).map((section) => (
           <div className="nav-section" key={section.label}>
             <p>{section.label}</p>
-            {section.items.filter(item => item.path !== "/settings" || librarian.role === "admin").map((item) => {
+            {section.items.filter(item => (item.path !== "/settings" || librarian.role === "librarian") && (item.path !== "/accounts" || librarian.role !== "auditor")).map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -272,13 +298,20 @@ function Sidebar({
           <div className="sidebar-account-details">
             <strong>{librarian.name}</strong>
             <span>{librarian.email}</span>
-            <small>{librarian.role}</small>
+            <small>{staffRoleName(librarian.role)}</small>
           </div>
+          {devAccounts.length > 0 && <label className="sidebar-dev-switch">Login as
+            <select value="" onChange={event => void switchDevRole(event.target.value)}>
+              <option value="">Select a development role</option>
+              {devAccounts.map(account => <option key={account.role} value={account.role}>{account.name}</option>)}
+            </select>
+          </label>}
+          {switchError && <small className="sidebar-switch-error" role="alert">{switchError}</small>}
           <button role="menuitem" onClick={logout}><LogOut size={17} />Sign out</button>
         </div>}
         <button className="sidebar-account-trigger" aria-expanded={accountOpen} aria-haspopup="menu" onClick={() => setAccountOpen(open => !open)}>
           <span className="sidebar-account-avatar">{librarian.name.split(" ").map(part => part[0]).slice(0, 2).join("")}</span>
-          <span className="sidebar-account-label"><strong>{librarian.name}</strong><small>{librarian.role}</small></span>
+          <span className="sidebar-account-label"><strong>{librarian.name}</strong><small>{staffRoleName(librarian.role)}</small></span>
           <ChevronRight size={16} className={accountOpen ? "account-chevron open" : "account-chevron"} />
         </button>
       </div>
@@ -536,7 +569,7 @@ function QrDisplay({ close }: { close: () => void }) {
           </button>
         </div>
       </header>
-      <section className="display-card">
+      <section className={`display-card${settings.roomBookingUrl ? " with-booking" : ""}`}>
         <div className="display-copy">
           <span className="eyebrow">{settings.libraryName}</span>
           <h1>{settings.qrHeading}</h1>
@@ -561,6 +594,10 @@ function QrDisplay({ close }: { close: () => void }) {
             </div>
           )}
         </div>
+        {settings.roomBookingUrl && <div className="room-booking-card">
+          <QRCodeSVG value={settings.roomBookingUrl} size={104} level="M" />
+          <div><strong>Book a room</strong><span>Nap Rooms &amp; Collaboration Rooms</span></div>
+        </div>}
       </section>
       <footer>
         Library Attendance <span /> Powered by LifeOS

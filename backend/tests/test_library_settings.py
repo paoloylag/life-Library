@@ -21,7 +21,7 @@ async def client(monkeypatch):
 
     monkeypatch.setattr(settings, "app_env", "local")
     app.dependency_overrides[get_db] = override_db
-    session.add(Librarian(email="admin@life.edu.ph", name="Test Admin", password_hash=hash_password("test-password"), role="admin", is_active=True))
+    session.add(Librarian(email="admin@life.edu.ph", name="Test Librarian", password_hash=hash_password("test-password"), role="librarian", is_active=True))
     await session.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as value:
         assert (await value.post("/api/admin/login", json={"email": "admin@life.edu.ph", "password": "test-password"})).status_code == 204
@@ -42,6 +42,7 @@ async def test_settings_persist_and_public_display_is_limited(client):
     payload["duplicateWindowMinutes"] = 12
     payload["defaultReportUserType"] = "faculty"
     payload["programs"] = ["Arts, Design", "BS IT"]
+    payload["roomBookingUrl"] = "https://booking.example.edu/rooms"
 
     saved = await client.put("/api/library/settings", json=payload)
     assert saved.status_code == 200
@@ -54,6 +55,7 @@ async def test_settings_persist_and_public_display_is_limited(client):
 
     display = await client.get("/api/library/settings/display")
     assert display.json()["qrHeading"] == "Welcome to the Library"
+    assert display.json()["roomBookingUrl"] == "https://booking.example.edu/rooms"
     assert "librarians" not in display.json()
 
 
@@ -62,6 +64,9 @@ async def test_settings_validate_and_require_librarian_in_production(client, mon
     payload = (await client.get("/api/library/settings")).json()["settings"]
     payload["opensAt"] = "19:00"
     payload["closesAt"] = "18:00"
+    assert (await client.put("/api/library/settings", json=payload)).status_code == 422
+    payload["opensAt"] = "07:00"
+    payload["roomBookingUrl"] = "javascript:alert(1)"
     assert (await client.put("/api/library/settings", json=payload)).status_code == 422
 
     monkeypatch.setattr(settings, "app_env", "production")

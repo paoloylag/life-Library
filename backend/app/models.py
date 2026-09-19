@@ -13,7 +13,7 @@ class Librarian(Base):
     name: Mapped[str] = mapped_column(String(255))
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    role: Mapped[str] = mapped_column(String(20), default="librarian")
+    role: Mapped[str] = mapped_column(String(30), default="librarian_associate")
     is_development: Mapped[bool] = mapped_column(Boolean, default=False)
 
 

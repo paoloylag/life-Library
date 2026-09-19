@@ -30,7 +30,7 @@ async def api_db(monkeypatch):
 
 @pytest.fixture
 async def client(api_db):
-    api_db.add(Librarian(email="admin@life.edu.ph", name="Test Admin", password_hash=hash_password("test-password"), role="admin", is_active=True))
+    api_db.add(Librarian(email="admin@life.edu.ph", name="Test Librarian", password_hash=hash_password("test-password"), role="librarian", is_active=True))
     await api_db.commit()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -74,7 +74,7 @@ async def test_user_search_manual_check_in_and_history(client, api_db):
     assert history.status_code == 200
     assert history.json()["items"][0]["source"] == "manual"
     assert history.json()["items"][0]["note"] == "Scanner unavailable"
-    assert history.json()["items"][0]["recorded_by"] == "Test Admin"
+    assert history.json()["items"][0]["recorded_by"] == "Test Librarian"
 
 
 @pytest.mark.asyncio

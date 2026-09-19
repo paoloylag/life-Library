@@ -8,7 +8,7 @@ from test_librarian_auth import add_librarian, auth_context, login
 @pytest.mark.asyncio
 async def test_admin_can_create_and_update_all_user_categories(auth_context):
     client, db = auth_context
-    for role in ("admin", "auditor"):
+    for role in ("librarian", "auditor"):
         await add_librarian(db, role)
     payload = {
         "number": "LC-100", "name": "Alex Rivera", "email": "alex@life.edu.ph",
@@ -17,7 +17,7 @@ async def test_admin_can_create_and_update_all_user_categories(auth_context):
     await login(client, "auditor")
     assert (await client.post("/api/library/users", json=payload)).status_code == 403
     await client.post("/api/admin/logout")
-    await login(client, "admin")
+    await login(client, "librarian")
     created = await client.post("/api/library/users", json=payload)
     assert created.status_code == 201, created.text
     assert created.json()["program"] == "BSIT"
@@ -39,13 +39,13 @@ async def test_admin_can_create_and_update_all_user_categories(auth_context):
 @pytest.mark.asyncio
 async def test_google_linked_category_cannot_be_overridden(auth_context):
     client, db = auth_context
-    await add_librarian(db, "admin")
+    await add_librarian(db, "librarian")
     user = User(email="staff@life.edu.ph", name="Staff", google_id="google-1", role="non-teaching personnel")
     db.add(user)
     await db.flush()
     db.add(StudentProfile(user_id=user.id, student_number="STAFF-1", user_type="non-teaching personnel"))
     await db.commit()
-    await login(client, "admin")
+    await login(client, "librarian")
     response = await client.put("/api/library/users/STAFF-1", json={
         "number": "STAFF-1", "name": "Staff", "email": "staff@life.edu.ph",
         "user_type": "student",

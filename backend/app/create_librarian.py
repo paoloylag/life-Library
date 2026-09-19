@@ -11,8 +11,8 @@ from app.models import Librarian
 async def main():
     email = input("Email: ").strip().lower()
     name = input("Name: ").strip()
-    role = input("Role [admin/librarian/auditor] (librarian): ").strip().lower() or "librarian"
-    if role not in ("admin", "librarian", "auditor"):
+    role = input("Role [librarian/librarian_associate/auditor] (librarian_associate): ").strip().lower() or "librarian_associate"
+    if role not in ("librarian", "librarian_associate", "auditor"):
         raise SystemExit("Invalid role.")
     password = getpass.getpass("Password: ")
     if len(password) < 10:

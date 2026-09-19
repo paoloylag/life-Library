@@ -63,7 +63,7 @@ async def test_anonymous_admin_routes_are_closed_even_in_local_mode(auth_context
 @pytest.mark.asyncio
 async def test_librarian_roles_authorize_reads_and_mutations(auth_context):
     client, db = auth_context
-    for role in ("admin", "librarian", "auditor"):
+    for role in ("librarian", "librarian_associate", "auditor"):
         await add_librarian(db, role)
 
     await login(client, "auditor")
@@ -76,14 +76,14 @@ async def test_librarian_roles_authorize_reads_and_mutations(auth_context):
     assert (await client.get("/api/library/settings")).status_code == 403
     await client.post("/api/admin/logout")
 
-    await login(client, "librarian")
+    await login(client, "librarian_associate")
     assert (await client.get("/api/library/sessions/current")).status_code == 200
     assert (await client.get("/api/library/settings")).status_code == 403
     await client.post("/api/admin/logout")
 
-    await login(client, "admin")
+    await login(client, "librarian")
     assert (await client.get("/api/library/settings")).status_code == 200
-    assert (await client.get("/api/admin/me")).json()["role"] == "admin"
+    assert (await client.get("/api/admin/me")).json()["role"] == "librarian"
 
 
 @pytest.mark.asyncio
@@ -92,12 +92,12 @@ async def test_local_dev_accounts_are_opt_in_and_blocked_in_production(auth_cont
     monkeypatch.setattr(settings, "enable_dev_librarians", True)
     await seed_dev_librarians(db)
     accounts = (await client.get("/api/admin/dev-accounts")).json()["accounts"]
-    assert {account["role"] for account in accounts} == {"admin", "librarian", "auditor"}
-    admin = next(account for account in accounts if account["role"] == "admin")
-    assert (await client.post("/api/admin/login", json=admin)).status_code == 204
+    assert {account["role"] for account in accounts} == {"librarian", "librarian_associate", "auditor"}
+    librarian = next(account for account in accounts if account["role"] == "librarian")
+    assert (await client.post("/api/admin/login", json=librarian)).status_code == 204
     assert (await client.get("/api/admin/me")).status_code == 200
 
     monkeypatch.setattr(settings, "app_env", "production")
     assert (await client.get("/api/admin/dev-accounts")).status_code == 404
     assert (await client.get("/api/admin/me")).status_code == 401
-    assert (await client.post("/api/admin/login", json=admin)).status_code == 401
+    assert (await client.post("/api/admin/login", json=librarian)).status_code == 401

@@ -171,13 +171,13 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Student visit pages | Implemented with seeded data |
 | Reports, charts, Excel, and PDF | Integrated with FastAPI data and exports |
 | Persistent PostgreSQL attendance | Dashboard, Attendance, and Library Users integrated |
-| Librarian login screen/session enforcement | Implemented with administrator, librarian, and auditor roles |
+| Librarian login screen/session enforcement | Implemented with librarian, librarian associate, and auditor roles |
 | Google SSO check-in | Frontend and backend integrated; credentials, roster profiles, and backend deployment pending |
 | Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
 | Production QR token validation | Backend-issued token used by authenticated and guest check-ins |
 | Server-backed settings | Implemented; some stored policies await enforcement |
 | Deployment of API/database | Pending |
-| User/profile administration | Administrator create/edit implemented; bulk roster import pending |
+| User/profile administration | Librarian create/edit implemented; bulk roster import pending |
 | Automated backend tests and migrations | Implemented locally; CI workflow added, remote run pending |
 
 ## MVP Completion Priorities
@@ -196,7 +196,7 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 ## Operating Rules
 
 - A visit is a check-in event; there is no check-out workflow.
-- The backend issues and validates a daily QR token; only librarian and administrator accounts can retrieve its URL.
+- The backend issues and validates a daily QR token; librarian and librarian associate accounts can retrieve its URL.
 - School Google authentication identifies QR users; librarian authentication remains credential-based.
 - Manual entries must retain source, librarian, date/time, and adjustment reason for auditability.
 - Duplicate-scan protection must be enforced by the backend.

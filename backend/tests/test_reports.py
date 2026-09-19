@@ -34,7 +34,7 @@ async def report_db(monkeypatch):
 
 @pytest.fixture
 async def client(report_db):
-    report_db.add(Librarian(email="admin@life.edu.ph", name="Test Admin", password_hash=hash_password("test-password"), role="admin", is_active=True))
+    report_db.add(Librarian(email="admin@life.edu.ph", name="Test Librarian", password_hash=hash_password("test-password"), role="librarian", is_active=True))
     await report_db.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as value:
         assert (await value.post("/api/admin/login", json={"email": "admin@life.edu.ph", "password": "test-password"})).status_code == 204

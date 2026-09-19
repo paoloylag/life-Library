@@ -21,9 +21,9 @@ Last verified: September 18, 2026
   check-ins are persisted through FastAPI.
 - Library Users provides backend search, surname ordering, profile details, and
   complete visit histories.
-- Administrators can add and edit library-user profiles in Library Users,
+- Librarians can add and edit library-user profiles in Library Users,
   including student, faculty, non-teaching, administrator, and visitor records.
-  Auditor and librarian accounts retain read-only directory access. Google-linked
+  Auditor and librarian associate accounts retain read-only directory access. Google-linked
   email, number, and category are not manually editable.
 - Development Docker startup applies deterministic roster and attendance seeds;
   production startup never seeds data.
@@ -63,6 +63,9 @@ Last verified: September 18, 2026
 - The QR display reads only its public wording from
   `/api/library/settings/display`. QR duplicate prevention uses the saved
   scan window. Reports use the saved initial grouping and user-type filter.
+- Settings may hold one HTTPS room-booking URL for Nap Rooms and Collaboration
+  Rooms. When configured, the full-screen display shows a smaller booking QR
+  alongside the primary attendance QR. No booking URL has been supplied yet.
 - Opening hours, timezone, current term, school reference lists, planned
   librarian roles, visitor fields, and retention years are stored but are not
   yet enforced by attendance, account provisioning, or automatic deletion.
@@ -71,9 +74,13 @@ Last verified: September 18, 2026
 
 - The daily QR URL, dashboard, users, attendance, reports, and Settings API
   require a signed-in librarian account even in local development.
-- Administrator may manage Settings and attendance. Librarian may manage QR
-  display and manual check-ins. Auditor may view dashboard, users, attendance,
+- Librarian may manage all Settings, library users, staff roles, and attendance.
+  Librarian Associate may manage QR display and manual check-ins. Auditor may
+  view dashboard, users, attendance,
   and reports but cannot retrieve the daily QR URL or change attendance.
+- Alembic migration `b4d718c70aa1` maps former Administrator accounts to
+  Librarian and former Librarian accounts to Librarian Associate, preserving
+  their access. The isolated local demo database has been migrated and backed up.
 - Manual check-ins retain the signed-in librarian ID and return their name in
   attendance history. Real accounts can be created with
   `python -m app.create_librarian`, choosing a role at the prompt.
@@ -81,6 +88,12 @@ Last verified: September 18, 2026
   `ENABLE_DEV_LIBRARIANS=true`. The role picker is shown only in Vite dev mode.
   Test accounts are refused when the opt-in is off or the backend is not local.
   Never expose the opt-in local server to untrusted networks.
+- The development role switch is also available from the signed-in account
+  menu when the same local opt-in is enabled. Production builds omit it.
+- Librarians and Librarian Associates can create staff accounts and assign
+  associate or auditor roles from Staff Accounts. Only Librarians can create or
+  manage Librarian accounts. Staff can change eligible roles and active status;
+  nobody can remove their own access or edit development test accounts.
 
 ## Google Directory credentials
 

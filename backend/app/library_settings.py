@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -28,6 +29,15 @@ class LibrarySettings(BaseModel):
     retentionYears: int = Field(default=5, ge=1, le=10)
     qrHeading: str = Field(default="Scan to record your visit", min_length=1, max_length=70)
     qrInstructions: str = Field(default="Use your school Google account to verify your identity and record your library check-in.", max_length=220)
+    roomBookingUrl: str = Field(default="", max_length=2048)
+
+    @field_validator("roomBookingUrl")
+    @classmethod
+    def valid_room_booking_url(cls, value: str) -> str:
+        value = value.strip()
+        if value and (urlsplit(value).scheme != "https" or not urlsplit(value).hostname):
+            raise ValueError("Room booking link must be an HTTPS URL")
+        return value
 
     @field_validator("opensAt", "closesAt")
     @classmethod

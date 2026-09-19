@@ -67,7 +67,7 @@ async def current_librarian(request: Request, db: Annotated[AsyncSession, Depend
     )
     if not librarian:
         raise HTTPException(401, "Librarian account unavailable")
-    if librarian.role not in ("admin", "librarian", "auditor"):
+    if librarian.role not in ("librarian", "librarian_associate", "auditor"):
         raise HTTPException(403, "Unknown librarian role")
     if librarian.is_development and not (
         settings.app_env == "local" and settings.enable_dev_librarians
@@ -77,12 +77,12 @@ async def current_librarian(request: Request, db: Annotated[AsyncSession, Depend
 
 
 async def librarian_editor(librarian: Annotated[Librarian, Depends(current_librarian)]):
-    if librarian.role not in ("admin", "librarian"):
-        raise HTTPException(403, "Librarian or administrator permission required")
+    if librarian.role not in ("librarian", "librarian_associate"):
+        raise HTTPException(403, "Librarian permission required")
     return librarian
 
 
 async def librarian_admin(librarian: Annotated[Librarian, Depends(current_librarian)]):
-    if librarian.role != "admin":
-        raise HTTPException(403, "Administrator permission required")
+    if librarian.role != "librarian":
+        raise HTTPException(403, "Librarian permission required")
     return librarian

@@ -14,7 +14,7 @@ See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architectu
 5. In `frontend`, run `pnpm install`, then `pnpm dev --host 127.0.0.1`.
 
 When local test accounts are enabled, the sign-in page shows a `Login as`
-selector for Administrator, Librarian, and Auditor. Selecting one fills the
+selector for Librarian, Librarian Associate, and Auditor. Selecting one fills the
 email and password fields. This selector and its accounts are unavailable in
 production. Never enable them on a network-exposed server.
 

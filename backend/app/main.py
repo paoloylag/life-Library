@@ -18,6 +18,7 @@ from app.auth import (
     current_user,
     issue_librarian,
     issue_student,
+    hash_password,
     librarian_admin,
     librarian_editor,
     verify_password,
@@ -54,6 +55,24 @@ class GuestCheckIn(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     organization: str | None = Field(default=None, max_length=180)
     purpose: str = Field(min_length=2, max_length=180)
+
+
+class StaffAccountCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=255)
+    email: str = Field(min_length=3, max_length=255)
+    password: str = Field(min_length=10, max_length=128)
+    role: str
+
+
+class StaffAccountUpdate(BaseModel):
+    role: str
+    is_active: bool
+
+
+def staff_json(row: Librarian):
+    return {"id": row.id, "name": row.name, "email": row.email,
+            "role": row.role, "is_active": row.is_active,
+            "is_development": row.is_development}
 
 
 class LibraryUserInput(BaseModel):
@@ -226,6 +245,7 @@ async def get_library_display_settings(db=Depends(get_db)):
         "libraryName": values.libraryName,
         "qrHeading": values.qrHeading,
         "qrInstructions": values.qrInstructions,
+        "roomBookingUrl": values.roomBookingUrl,
     }
 
 
@@ -418,6 +438,65 @@ async def admin_login(request: Request, db=Depends(get_db)):
 @app.get("/api/admin/me")
 async def admin_me(librarian=Depends(current_librarian)):
     return {"id": librarian.id, "name": librarian.name, "email": librarian.email, "role": librarian.role}
+
+
+@app.get("/api/admin/accounts")
+async def list_staff_accounts(librarian=Depends(librarian_editor), db=Depends(get_db)):
+    rows = (await db.scalars(select(Librarian).order_by(Librarian.name))).all()
+    return {"items": [staff_json(row) for row in rows]}
+
+
+@app.post("/api/admin/accounts", status_code=201)
+async def create_staff_account(
+    body: StaffAccountCreate, librarian=Depends(librarian_editor), db=Depends(get_db)
+):
+    name, email = body.name.strip(), body.email.strip().lower()
+    if (len(name) < 2 or email.count("@") != 1 or
+            any(char.isspace() for char in email) or
+            not all(email.split("@"))):
+        raise HTTPException(422, "Enter a valid name and email address")
+    if body.role not in ("librarian", "librarian_associate", "auditor"):
+        raise HTTPException(422, "Invalid staff role")
+    if body.role == "librarian" and librarian.role != "librarian":
+        raise HTTPException(403, "Only a librarian may assign the librarian role")
+    if await db.scalar(select(Librarian.id).where(Librarian.email == email)):
+        raise HTTPException(409, "A staff account with this email already exists")
+    row = Librarian(name=name, email=email, role=body.role,
+                    password_hash=hash_password(body.password), is_active=True)
+    db.add(row)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "A staff account with this email already exists")
+    return staff_json(row)
+
+
+@app.patch("/api/admin/accounts/{account_id}")
+async def update_staff_account(
+    account_id: int, body: StaffAccountUpdate,
+    librarian=Depends(librarian_editor), db=Depends(get_db)
+):
+    row = await db.get(Librarian, account_id)
+    if not row:
+        raise HTTPException(404, "Staff account not found")
+    if row.is_development:
+        raise HTTPException(409, "Development test accounts cannot be edited")
+    if body.role not in ("librarian", "librarian_associate", "auditor"):
+        raise HTTPException(422, "Invalid staff role")
+    if librarian.role != "librarian" and (row.role == "librarian" or body.role == "librarian"):
+        raise HTTPException(403, "Only a librarian may manage librarian accounts")
+    if row.id == librarian.id and (not body.is_active or body.role != row.role):
+        raise HTTPException(409, "You cannot remove your own access")
+    if row.role == "librarian" and (body.role != "librarian" or not body.is_active) and row.is_active:
+        count = await db.scalar(select(func.count(Librarian.id)).where(
+            Librarian.role == "librarian", Librarian.is_active.is_(True),
+            Librarian.is_development.is_(False)))
+        if count <= 1:
+            raise HTTPException(409, "At least one active librarian is required")
+    row.role, row.is_active = body.role, body.is_active
+    await db.commit()
+    return staff_json(row)
 
 
 @app.get("/api/admin/dev-accounts")

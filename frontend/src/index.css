@@ -294,6 +294,9 @@
 .module-stack .table-wrap{overflow-x:auto}
 .directory-page > .panel{overflow:hidden}
 .directory-page .table-wrap{contain:layout paint}
+.staff-page .panel{overflow:hidden}
+.staff-page .table-wrap{contain:layout paint}
+.staff-page .row-action:disabled{opacity:.45;cursor:not-allowed}
 .sidebar-foot{position:relative;display:block;min-width:0;padding-top:12px}
 .sidebar-account-trigger{display:grid;grid-template-columns:34px minmax(0,1fr) 16px;align-items:center;gap:10px;width:100%;border:0;border-radius:8px;background:transparent;color:#fff;padding:8px 6px;text-align:left}
 .sidebar-account-trigger:hover,.sidebar-account-trigger[aria-expanded="true"]{background:rgba(255,255,255,.13)}
@@ -312,8 +315,12 @@
 .sidebar-account-details small{text-transform:capitalize}
 .sidebar-account-menu button{display:flex;align-items:center;gap:9px;width:100%;border:0;background:transparent;color:var(--text);padding:11px 12px;text-align:left;font-size:12px;font-weight:800}
 .sidebar-account-menu button:hover{background:color-mix(in srgb,var(--muted) 10%,var(--panel))}
+.sidebar-dev-switch{display:grid;gap:6px;border-bottom:1px solid var(--line);padding:11px 12px;color:var(--muted);font-size:11px;font-weight:800}
+.sidebar-dev-switch select{min-width:0;width:100%;height:36px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);padding:0 8px;font-size:12px}
+.sidebar-switch-error{display:block;padding:8px 12px;color:var(--crimson)}
 .lifeos-shell.dark .sidebar-account-menu{background:#222733;color:#f8fafc}
 .lifeos-shell.dark .sidebar-account-menu button{color:#f8fafc}
+.lifeos-shell.dark .sidebar-dev-switch select{background:#191d25;color:#f8fafc}
 .lifeos-drawer{display:flex;flex-direction:column;max-height:100dvh}
 .lifeos-sidebar.compact{flex:1;min-height:0}
 .directory-actions,.directory-row-actions{display:flex;align-items:center;gap:8px}
@@ -335,6 +342,21 @@
 .qr-panel .qr-code > svg{display:block;width:min(100%,230px);height:auto;aspect-ratio:1}
 .qr-panel .display-empty{min-width:0;overflow-wrap:anywhere}
 .display-qr > svg{display:block;width:100%;height:auto;aspect-ratio:1;max-height:none}
+.room-booking-card{display:flex;align-items:center;gap:12px;width:max-content;max-width:100%;margin-top:20px;border:1px solid rgba(105,15,13,.16);border-radius:8px;background:#fff;padding:10px;color:#17191f;text-align:left}
+.room-booking-card svg{display:block;width:104px;height:104px;flex:none}
+.room-booking-card div{display:grid;gap:5px;min-width:0}
+.room-booking-card strong{color:#690f0d;font-size:15px}
+.room-booking-card span{color:#626a76;font-size:12px;line-height:1.3}
+.display-card .display-copy{grid-column:1;grid-row:1}
+.display-card .display-qr{grid-column:2;grid-row:1 / span 2}
+.display-card .room-booking-card{grid-column:1;grid-row:2;align-self:start;margin-top:0}
+@media(max-width:900px), (min-width:901px) and (max-width:1100px) and (orientation:portrait){
+  .display-card{grid-template-columns:minmax(0,1fr);grid-template-rows:none}
+  .display-card .display-copy,.display-card .display-qr,.display-card .room-booking-card{grid-column:1;grid-row:auto}
+  .display-card .room-booking-card{justify-self:center}
+  .display-card.with-booking .display-qr{width:min(100%,46dvh,480px)}
+}
+@media(max-width:430px){.room-booking-card svg{width:82px;height:82px}.room-booking-card strong{font-size:13px}.room-booking-card span{font-size:11px}}
 
 @media (min-width:761px) and (max-width:1350px){
   .dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
