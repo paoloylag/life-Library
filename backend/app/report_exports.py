@@ -9,7 +9,7 @@ from reportlab.graphics.charts.linecharts import HorizontalLineChart
 from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
@@ -147,7 +147,7 @@ def export_excel(report: dict) -> bytes:
 
 def export_pdf(report: dict) -> bytes:
     output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=landscape(A4), leftMargin=28, rightMargin=28)
+    doc = SimpleDocTemplate(output, pagesize=landscape(letter), leftMargin=28, rightMargin=28)
     styles = getSampleStyleSheet()
     story = [Paragraph("Life College | Library Attendance", styles["Title"]), Spacer(1, 10)]
 
@@ -155,7 +155,7 @@ def export_pdf(report: dict) -> bytes:
         body = [[str(value) for value in headers]] + [[str(value) for value in row] for row in rows]
         if len(body) == 1:
             body.append(["No records"] + [""] * (len(headers) - 1))
-        element = Table(body, colWidths=widths, repeatRows=1, hAlign="LEFT")
+        element = Table(body, colWidths=widths, repeatRows=1, hAlign="CENTER")
         element.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#" + MAROON)),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -173,6 +173,7 @@ def export_pdf(report: dict) -> bytes:
         if not shown or not any(item["value"] for item in shown):
             return
         drawing = Drawing(440, 190)
+        drawing.hAlign = "CENTER"
         if kind == "pie":
             graph = Pie()
             graph.x, graph.y, graph.width, graph.height = 120, 15, 170, 170
