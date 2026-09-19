@@ -16,7 +16,7 @@ export default function StaffAccounts({current}:{current:LibrarianSession}){
  const load=React.useCallback(()=>apiRequest<{items:Staff[]}>('/api/admin/accounts').then(result=>{setAccounts(result.items);setError('')}).catch(reason=>setError(reason.message)),[])
  React.useEffect(()=>{void load()},[load])
  return <div className="module-stack staff-page">
-  <div className="module-heading"><div><span className="eyebrow">Administration</span><h2>Staff accounts</h2><p>Manage access to the library dashboard.</p></div><button className="manual-button" onClick={()=>setEditing(null)}><Plus size={17}/>Add Account</button></div>
+  <div className="module-heading"><div><h2>Administration</h2><p>Manage access to the library dashboard.</p></div><button className="manual-button" onClick={()=>setEditing(null)}><Plus size={17}/>Add Account</button></div>
   <section className="panel">
    {error&&<p className="module-error" role="alert">{error}</p>}
    <div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>

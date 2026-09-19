@@ -57,8 +57,7 @@ export default function Attendance({editable}:{editable:boolean}) {
     <div className="module-stack">
       <div className="module-heading">
         <div>
-          <span className="eyebrow">Check-in log</span>
-          <h2>Library attendance</h2>
+          <h2>Check-in Log</h2>
           <p>QR and librarian-recorded check-ins share one attendance log.</p>
         </div>
         <div className="module-count">

@@ -149,7 +149,7 @@ function App() {
       : path === "/accounts"
         ? "Staff Accounts"
         : path.startsWith("/students")
-          ? "Students"
+          ? "Library Users"
           : path === "/settings"
             ? "Settings"
             : "Dashboard";
