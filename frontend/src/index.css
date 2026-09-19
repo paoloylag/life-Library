@@ -389,3 +389,112 @@
   .lifeos-topbar h1{font-size:26px;overflow-wrap:anywhere}
   .lifeos-topbar .top-actions{gap:6px}
 }
+.directory-toolbar .module-search{flex:0 1 340px;width:min(340px,100%);max-width:340px}
+.directory-data-actions{position:relative}
+.directory-data-actions>summary{width:auto;gap:7px;list-style:none;white-space:nowrap}
+.directory-data-actions>summary::-webkit-details-marker{display:none}
+.directory-data-actions[open]>summary{border-color:var(--teal)}
+.directory-data-actions[open]>summary svg:last-child{transform:rotate(180deg)}
+.directory-data-actions>summary svg:last-child{transition:transform .15s ease}
+.directory-data-menu{position:absolute;top:calc(100% + 7px);right:0;z-index:25;width:260px;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 16px 38px rgba(15,23,42,.18)}
+.directory-data-menu button{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);padding:12px;text-align:left}
+.directory-data-menu button:last-child{border-bottom:0}
+.directory-data-menu button:hover{background:color-mix(in srgb,var(--muted) 7%,var(--panel))}
+.directory-data-menu button:disabled{cursor:not-allowed;opacity:.55}
+.directory-data-menu button svg{color:var(--maroon)}
+.directory-data-menu button span,.directory-data-menu button strong,.directory-data-menu button small{display:block;min-width:0}
+.directory-data-menu button strong{font-size:12px}
+.directory-data-menu button small{margin-top:3px;color:var(--muted);font-size:10px;font-weight:500}
+@media(max-width:760px){
+  .directory-toolbar .module-search{flex:1;width:100%;max-width:none}
+  .directory-data-actions{min-width:0}
+  .directory-data-actions>summary{width:100%;justify-content:center}
+  .directory-data-menu{right:auto;left:0;width:min(280px,calc(100vw - 48px))}
+}
+
+/* iPad-first application layout and predictable small-screen overflow. */
+.scan-page{min-width:0;width:100%;overflow-x:hidden}
+.scan-card{min-width:0;max-width:100%;overflow:hidden}
+.scan-card>*,.scan-heading,.scan-state,.scan-success,.identity-card>div{min-width:0;max-width:100%}
+.scan-heading h1,.scan-state h1,.scan-success h1,.scan-heading p,.scan-state p,.scan-success>p,.identity-card p,.identity-card strong,.identity-card small,.privacy-note{overflow-wrap:anywhere}
+.scan-primary,.scan-secondary,.guest-toggle{min-width:0;white-space:normal;text-align:center}
+@media (hover:none) and (pointer:coarse){
+  .icon-button,.row-action,.display-action,.nav-section button{min-height:44px}
+  .icon-button,.row-action{width:44px;height:44px}
+  .primary-button,.secondary-button,.manual-button,.save-button{min-height:44px}
+}
+@media (min-width:700px) and (max-width:1180px){
+  .lifeos-topbar{min-height:78px;padding:14px 24px}
+  .lifeos-topbar h1{font-size:34px}
+  .lifeos-content{padding:24px}
+  .module-heading{align-items:center}
+  .module-heading h2,.settings-intro h2{font-size:42px}
+  .dashboard-grid{gap:16px}
+  .dashboard-metrics{gap:16px}
+  .overview-hero{min-height:180px;padding:26px}
+  .overview-hero h2{font-size:48px}
+  .panel,.metric-card{padding:16px}
+  .directory-toolbar{align-items:stretch;flex-direction:column}
+  .directory-toolbar .module-search{max-width:none}
+  .directory-toolbar-actions{justify-content:flex-end;flex-wrap:wrap}
+  .reports-page .module-heading>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end}
+}
+@media (min-width:700px) and (max-width:900px) and (orientation:portrait){
+  .dashboard-grid{grid-template-columns:minmax(250px,.9fr) minmax(0,1.1fr)}
+  .dashboard-grid .overview-hero,.dashboard-grid .activity-panel{grid-column:1/-1}
+  .dashboard-grid .qr-panel{grid-column:1}
+  .dashboard-metrics{grid-column:2}
+  .settings-intro{align-items:center}
+  .profile-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .profile-metrics .metric-card{min-height:120px}
+  .profile-metrics .metric-card strong{font-size:36px}
+  .profile-metrics .metric-card strong.metric-date{font-size:28px}
+}
+.attendance-table table{min-width:760px}
+.directory-page>.panel .table-wrap table{min-width:880px}
+.staff-page .table-wrap table{min-width:660px}
+.directory-page .profile-hero~.panel .table-wrap table{min-width:620px}
+.dashboard-grid .activity-panel table{min-width:590px}
+@media (max-width:699px){
+  .lifeos-content{padding:14px}
+  .lifeos-topbar{padding:10px 14px}
+  .lifeos-topbar>div:nth-child(2){min-width:0}
+  .lifeos-topbar h1{font-size:28px;line-height:1.05}
+  .lifeos-topbar p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .module-stack,.settings-page{gap:14px}
+  .module-heading{gap:12px}
+  .module-heading h2,.settings-intro h2{font-size:36px}
+  .module-count{width:auto;min-width:0;align-self:stretch}
+  .panel{padding:12px}
+  .panel-title{align-items:flex-start;gap:10px}
+  .panel-title>span{flex:none}
+  .overview-hero{min-height:0;padding:22px}
+  .overview-hero h2{font-size:42px}
+  .date-block{min-width:0;width:100%}
+  .directory-toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .directory-toolbar-actions>*{width:100%;min-width:0}
+  .directory-toolbar-actions .manual-button:last-child:nth-child(odd){grid-column:1/-1}
+  .directory-toolbar-actions .secondary-button,.directory-toolbar-actions .manual-button{justify-content:center;white-space:normal}
+  .staff-page .module-heading>button{width:100%;justify-content:center}
+  .reports-page .module-heading>div:last-child{display:grid;width:100%;grid-template-columns:1fr 1fr;gap:8px}
+  .reports-page .module-heading>div:last-child button{justify-content:center;min-width:0;padding-left:8px;padding-right:8px}
+  .settings-section>header,.settings-fields{padding:14px}
+  .settings-actions{width:100%}
+  .profile-hero{padding:18px}
+  .profile-hero h2{font-size:30px;overflow-wrap:anywhere}
+  .profile-hero p{overflow-wrap:anywhere}
+  .manual-modal>header{padding:16px}
+  .manual-form{padding:16px}
+  .manual-modal>footer{position:sticky;bottom:0;background:var(--panel);padding:12px 16px}
+  .table-wrap{-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+}
+@media (max-width:430px){
+  .lifeos-content{padding:10px}
+  .module-heading h2,.settings-intro h2{font-size:32px}
+  .module-count{grid-template-columns:auto 1fr;grid-template-rows:auto auto}
+  .directory-toolbar-actions{grid-template-columns:1fr}
+  .directory-toolbar-actions .manual-button:last-child:nth-child(odd){grid-column:auto}
+  .reports-page .module-heading>div:last-child{grid-template-columns:1fr}
+  .manual-modal>footer{display:grid;grid-template-columns:1fr 1fr}
+  .manual-modal>footer button{width:100%}
+}
