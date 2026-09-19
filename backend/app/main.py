@@ -1,7 +1,9 @@
 import asyncio
-from uuid import uuid4
+import csv
+import io
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
@@ -16,9 +18,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.auth import (
     current_librarian,
     current_user,
+    hash_password,
     issue_librarian,
     issue_student,
-    hash_password,
     librarian_admin,
     librarian_editor,
     verify_password,
@@ -27,8 +29,21 @@ from app.config import settings
 from app.database import SessionLocal, get_db, init_database
 from app.dev_librarians import DEV_ACCOUNTS, dev_accounts_enabled, seed_dev_librarians
 from app.google_directory import lookup_directory_identity
-from app.library_settings import LibrarySettings, read_library_settings, save_library_settings, settings_audit
-from app.models import Librarian, LibraryConfiguration, LibrarySession, LibraryVisit, StudentProfile, User
+from app.import_roster import import_rows, read_roster_text
+from app.library_settings import (
+    LibrarySettings,
+    read_library_settings,
+    save_library_settings,
+    settings_audit,
+)
+from app.models import (
+    Librarian,
+    LibraryConfiguration,
+    LibrarySession,
+    LibraryVisit,
+    StudentProfile,
+    User,
+)
 from app.report_exports import export_excel, export_pdf
 from app.reports import ReportFilters, build_report
 from app.services import (
@@ -89,6 +104,11 @@ class LibraryUserInput(BaseModel):
 
 
 USER_CATEGORIES = {"student", "faculty", "non-teaching personnel", "administrator", "visitor"}
+
+
+def safe_csv_value(value) -> str:
+    text_value = "" if value is None else str(value)
+    return "'" + text_value if text_value.startswith(("=", "+", "-", "@")) else text_value
 
 
 def clean_user_input(body: LibraryUserInput):
@@ -637,6 +657,99 @@ async def library_users(
         key=lambda item: (item["name"].split()[-1].casefold(), item["name"].casefold())
     )
     return {"items": items, "total": total or 0, "page": page, "page_size": page_size}
+
+
+@app.get("/api/library/users/export.csv")
+async def export_library_users_csv(
+    q: str = "",
+    user_type: str = "",
+    librarian=Depends(current_librarian),
+    db=Depends(get_db),
+):
+    filters = []
+    if q.strip():
+        term = f"%{q.strip()}%"
+        filters.append(
+            or_(
+                User.name.ilike(term),
+                User.email.ilike(term),
+                StudentProfile.student_number.ilike(term),
+                StudentProfile.program.ilike(term),
+                StudentProfile.section.ilike(term),
+                StudentProfile.department.ilike(term),
+            )
+        )
+    if user_type.strip():
+        filters.append(StudentProfile.user_type == user_type.strip().lower())
+
+    profiles = (
+        await db.scalars(
+            select(StudentProfile)
+            .join(User)
+            .where(*filters)
+            .options(selectinload(StudentProfile.user))
+            .order_by(User.name)
+        )
+    ).all()
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(
+        (
+            "number",
+            "name",
+            "email",
+            "user_type",
+            "program",
+            "year_level",
+            "section",
+            "department",
+            "organization",
+            "is_active",
+        )
+    )
+    for profile in profiles:
+        values = (
+            profile.student_number,
+            profile.user.name,
+            "" if profile.user.email.endswith("@visitor.local") else profile.user.email,
+            profile.user_type,
+            profile.program,
+            profile.year_level,
+            profile.section,
+            profile.department,
+            profile.organization,
+            str(profile.is_active and profile.user.is_active).lower(),
+        )
+        writer.writerow(safe_csv_value(value) for value in values)
+    return Response(
+        content="\ufeff" + output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="life-college-library-users.csv"'
+        },
+    )
+
+
+@app.post("/api/library/users/import.csv")
+async def import_library_users_csv(
+    request: Request,
+    dry_run: bool = True,
+    librarian=Depends(librarian_admin),
+):
+    body = await request.body()
+    if not body or len(body) > 5 * 1024 * 1024:
+        raise HTTPException(422, "Select a CSV file no larger than 5 MB")
+    try:
+        rows = read_roster_text(body.decode("utf-8-sig"))
+        result = await import_rows(rows, dry_run=dry_run)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {
+        "status": "validated" if dry_run else "imported",
+        "total": len(rows),
+        "created": result.created,
+        "updated": result.updated,
+    }
 
 
 @app.post("/api/library/users", status_code=201)

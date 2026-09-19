@@ -47,9 +47,9 @@ async def add_user(db):
         user_id=user.id,
         student_number="LC-001",
         user_type="student",
-        program="BS Information Technology",
+        program="BS-ENTREP",
         year_level="1st Year",
-        section="Section A",
+        section="1A",
         is_active=True,
     )
     db.add(profile)

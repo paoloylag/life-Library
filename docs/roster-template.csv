@@ -1,4 +1,4 @@
 number,name,email,user_type,program,year_level,section,department,organization,is_active
-LC-2026-00001,Sample Student,student@life.edu.ph,student,BS Information Technology,1st Year,Section A,,,true
+LC-2026-00001,Sample Student,student@life.edu.ph,student,BS-ENTREP,1st Year,1A,,,true
 FAC-00001,Sample Faculty,faculty@life.edu.ph,faculty,,,,Academic Affairs,,true
 VIS-00001,Sample Visitor,,visitor,,,,,External Organization,true

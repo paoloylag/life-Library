@@ -68,7 +68,11 @@ def roster_text(source: str | Path) -> str:
 
 
 def read_roster(source: str | Path) -> list[dict]:
-    with io.StringIO(roster_text(source), newline="") as stream:
+    return read_roster_text(roster_text(source))
+
+
+def read_roster_text(content: str) -> list[dict]:
+    with io.StringIO(content, newline="") as stream:
         reader = csv.DictReader(stream)
         missing = {"number", "name", "user_type"} - set(reader.fieldnames or [])
         unknown = set(reader.fieldnames or []) - set(FIELDS)
@@ -126,7 +130,8 @@ async def import_rows(rows: list[dict], dry_run: bool = False) -> ImportResult:
             if profile and user_by_email and user_by_email.id != profile.user_id:
                 raise ValueError(f"Email {row['email']} belongs to another user")
             if not profile and user_by_email and user_by_email.profile:
-                raise ValueError(f"Email {row['email']} already has another profile")
+                profile = user_by_email.profile
+                profile.student_number = row["number"]
             if not profile:
                 user = user_by_email or User(
                     email=row["email"]

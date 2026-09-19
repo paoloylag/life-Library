@@ -9,8 +9,8 @@ export type LibrarySettings = {
 export const defaultSettings: LibrarySettings = {
   libraryName:'Life College Library',timezone:'Asia/Manila',opensAt:'07:00',closesAt:'18:00',
   qrExpiryMinutes:1440,duplicateWindowMinutes:5,academicYear:'2026-2027',semester:'1st Semester',
-  programs:['BS Information Technology','BS Business Administration','BS Psychology'],sections:['A','B','C'],
-  yearLevels:['1st Year','2nd Year','3rd Year','4th Year'],departments:['Academic Affairs','Administration','Library Services'],
+  programs:['BS-ENTREP','BS-ENTREP-FE','BS-ENTREP-TE','BS-ENTREP-SE','BS-ENTREP-AE','BS-ENTREP-CE'],sections:['1A','1B','2A','2B'],
+  yearLevels:['1st Year','2nd Year','3rd Year','4th Year'],departments:['Academic Affairs','Administration','Student Services','Library Services','Finance'],
   librarians:['Library Registrar'],visitorFields:['Full name','Organization','Purpose of visit','Contact number'],
   defaultReportPeriod:'Monthly',defaultReportUserType:'All',retentionYears:5,qrHeading:'Scan to record your visit',
   qrInstructions:'Use your school Google account to verify your identity and record your library check-in.',roomBookingUrl:''

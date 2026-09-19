@@ -1,7 +1,7 @@
 import re
-from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import select
@@ -18,10 +18,21 @@ class LibrarySettings(BaseModel):
     duplicateWindowMinutes: int = Field(default=5, ge=1, le=60)
     academicYear: str = Field(default="2026-2027", max_length=9)
     semester: Literal["1st Semester", "2nd Semester", "Summer"] = "1st Semester"
-    programs: list[str] = Field(default_factory=lambda: ["BS Information Technology", "BS Business Administration", "BS Psychology"])
-    sections: list[str] = Field(default_factory=lambda: ["A", "B", "C"])
+    programs: list[str] = Field(
+        default_factory=lambda: [
+            "BS-ENTREP",
+            "BS-ENTREP-FE",
+            "BS-ENTREP-TE",
+            "BS-ENTREP-SE",
+            "BS-ENTREP-AE",
+            "BS-ENTREP-CE",
+        ]
+    )
+    sections: list[str] = Field(default_factory=lambda: ["1A", "1B", "2A", "2B"])
     yearLevels: list[str] = Field(default_factory=lambda: ["1st Year", "2nd Year", "3rd Year", "4th Year"])
-    departments: list[str] = Field(default_factory=lambda: ["Academic Affairs", "Administration", "Library Services"])
+    departments: list[str] = Field(
+        default_factory=lambda: ["Academic Affairs", "Administration", "Student Services", "Library Services", "Finance"]
+    )
     librarians: list[str] = Field(default_factory=lambda: ["Library Registrar"])
     visitorFields: list[str] = Field(default_factory=lambda: ["Full name", "Organization", "Purpose of visit", "Contact number"])
     defaultReportPeriod: Literal["Daily", "Weekly", "Monthly", "Annual"] = "Monthly"

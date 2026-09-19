@@ -120,6 +120,9 @@ records the current time.
 | Method | Local URL | Access | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `http://127.0.0.1:8000/api/library/users` | Staff | Search and paginate library users |
+| `GET` | `http://127.0.0.1:8000/api/library/users/export.csv` | Staff | Download all users matching the active search and category filters |
+| `POST` | `http://127.0.0.1:8000/api/library/users/import.csv?dry_run=true` | Librarian | Validate a roster CSV and return create/update counts |
+| `POST` | `http://127.0.0.1:8000/api/library/users/import.csv?dry_run=false` | Librarian | Apply a validated roster CSV bulk update |
 | `POST` | `http://127.0.0.1:8000/api/library/users` | Librarian | Create a library user |
 | `GET` | `http://127.0.0.1:8000/api/library/users/{number}` | Staff | User profile and visit summary |
 | `PUT` | `http://127.0.0.1:8000/api/library/users/{number}` | Librarian | Update a library user |
@@ -140,9 +143,9 @@ Create and update body:
   "name": "Maria Santos",
   "email": "maria.santos@life.edu.ph",
   "user_type": "student",
-  "program": "BS Information Technology",
+  "program": "BS-ENTREP",
   "year_level": "1st Year",
-  "section": "A",
+  "section": "1A",
   "department": "Academic Affairs",
   "organization": "",
   "is_active": true
@@ -152,6 +155,11 @@ Create and update body:
 Valid categories are `student`, `faculty`, `non-teaching personnel`,
 `administrator`, and `visitor`. Google-linked email, number, and category fields
 remain managed by Google Workspace.
+
+CSV imports use the columns shown in `docs/roster-template.csv`, accept files up
+to 5 MB, and reconcile existing SSO profiles by email before creating users.
+Google-managed identity and category values are preserved while program, year
+level, section, department, organization, and active status are updated.
 
 ## Attendance and Dashboard
 
@@ -210,4 +218,3 @@ The complete settings schema is available interactively in Swagger at
 - `409`: duplicate or protected-state conflict
 - `422`: request or filter validation failed
 - `503`: Google authentication is not configured
-
