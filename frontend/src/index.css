@@ -423,6 +423,21 @@
 .dark .report-records .report-table-wrap tbody tr{background:var(--panel)}
 .dark .report-records .report-table-wrap tbody tr:hover{background:#222833}
 
+/* Pair Settings cards by row and keep adjacent cards the same visual height. */
+.settings-grid{align-items:stretch}
+.settings-section{height:100%}
+.audit-entry-body{display:grid;min-width:0;gap:3px;flex:1}
+.audit-details{margin-top:5px}
+.audit-details summary{width:max-content;max-width:100%;cursor:pointer;color:var(--maroon);font-size:11px;font-weight:800}
+.audit-details dl{display:grid;gap:8px;margin:9px 0 2px}
+.audit-details dl>div{display:grid;gap:4px;border-left:2px solid var(--line);padding-left:9px}
+.audit-details dt{color:var(--text);font-size:11px;font-weight:800}
+.audit-details dd{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:7px;margin:0;color:var(--muted);font-size:10px;font-weight:500}
+.audit-details dd span{overflow-wrap:anywhere}
+.audit-details dd b{color:var(--teal);font-size:9px;text-transform:uppercase}
+.dark .audit-details summary{color:var(--heading)}
+@media(max-width:600px){.audit-details dd{grid-template-columns:1fr}.audit-details dd b{padding:1px 0}}
+
 /* iPad-first application layout and predictable small-screen overflow. */
 .scan-page{min-width:0;width:100%;overflow-x:hidden}
 .scan-card{min-width:0;max-width:100%;overflow:hidden}

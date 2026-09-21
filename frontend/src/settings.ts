@@ -16,7 +16,10 @@ export const defaultSettings: LibrarySettings = {
   qrInstructions:'Use your school Google account to verify your identity and record your library check-in.',roomBookingUrl:''
 }
 import {apiRequest} from './api'
-export type SettingsAudit = {id:string;action:string;user:string;at:string}
+export type SettingsAudit = {
+  id:string; action:string; user:string; actorId:number|null; actorEmail:string|null
+  changedFields:string[]; beforeValues:Record<string,unknown>|null; afterValues:Record<string,unknown>|null; at:string
+}
 export type SettingsResponse = {settings:LibrarySettings;audit:SettingsAudit[];configured:boolean}
 export const getLibrarySettings = () => apiRequest<SettingsResponse>('/api/library/settings')
 export const saveLibrarySettings = (settings:LibrarySettings) => apiRequest<SettingsResponse>('/api/library/settings',{method:'PUT',body:JSON.stringify(settings)})

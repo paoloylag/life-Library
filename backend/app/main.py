@@ -254,7 +254,7 @@ async def put_library_settings(
     librarian=Depends(librarian_admin),
     db=Depends(get_db),
 ):
-    await save_library_settings(db, payload, librarian.name)
+    await save_library_settings(db, payload, librarian)
     return {"settings": payload.model_dump(), "audit": await settings_audit(db), "configured": True}
 
 

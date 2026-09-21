@@ -96,4 +96,11 @@ class LibrarySettingsAudit(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     action: Mapped[str] = mapped_column(String(120))
     actor: Mapped[str] = mapped_column(String(255))
+    actor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("librarians.id", ondelete="SET NULL"), nullable=True
+    )
+    actor_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    changed_fields: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    before_values: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    after_values: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

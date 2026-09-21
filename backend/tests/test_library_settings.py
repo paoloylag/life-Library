@@ -46,12 +46,29 @@ async def test_settings_persist_and_public_display_is_limited(client):
 
     saved = await client.put("/api/library/settings", json=payload)
     assert saved.status_code == 200
-    assert saved.json()["audit"][0]["action"] == "Settings updated"
+    audit = saved.json()["audit"][0]
+    assert audit["action"] == "Settings created"
+    assert audit["actorEmail"] == "admin@life.edu.ph"
+    assert audit["actorId"] is not None
+    assert "libraryName" in audit["changedFields"]
+    assert audit["beforeValues"] == {}
+    assert audit["afterValues"]["libraryName"] == "Life College Main Library"
     again = await client.get("/api/library/settings")
     assert again.json()["configured"] is True
     assert again.json()["settings"]["programs"] == ["Arts, Design", "BS IT"]
     assert again.json()["settings"]["duplicateWindowMinutes"] == 12
     assert len(again.json()["audit"]) == 1
+
+    payload["duplicateWindowMinutes"] = 15
+    updated = await client.put("/api/library/settings", json=payload)
+    change = updated.json()["audit"][0]
+    assert change["action"] == "Settings updated"
+    assert change["changedFields"] == ["duplicateWindowMinutes"]
+    assert change["beforeValues"]["duplicateWindowMinutes"] == 12
+    assert change["afterValues"]["duplicateWindowMinutes"] == 15
+
+    unchanged = await client.put("/api/library/settings", json=payload)
+    assert len(unchanged.json()["audit"]) == 2
 
     display = await client.get("/api/library/settings/display")
     assert display.json()["qrHeading"] == "Welcome to the Library"

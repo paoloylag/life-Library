@@ -63,6 +63,11 @@ Last verified: September 19, 2026
 - Settings and their audit history are now stored in the backend database.
   Production reads and writes require a librarian session. Local development
   follows the existing librarian-auth bypass.
+- New settings audit entries store the librarian ID, name, email, timestamp,
+  changed field names, and complete before-and-after JSON snapshots. Keys that
+  look like passwords, secrets, tokens, credentials, or private keys are
+  redacted before persistence. Audit rows created before this schema expansion
+  remain readable as legacy entries without snapshots.
 - The Settings page loads and saves through `/api/library/settings`. If the
   backend has no saved settings, it offers browser-saved values for a one-time
   manual save to the shared backend. Browser storage is cleared only after

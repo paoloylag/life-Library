@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import select
 
-from app.models import LibraryConfiguration, LibrarySettingsAudit
+from app.models import Librarian, LibraryConfiguration, LibrarySettingsAudit
 
 
 class LibrarySettings(BaseModel):
@@ -87,21 +87,57 @@ async def read_library_settings(db) -> LibrarySettings:
     return LibrarySettings.model_validate(row.values) if row else LibrarySettings()
 
 
-async def save_library_settings(db, payload: LibrarySettings, actor: str) -> dict:
+_SENSITIVE_SETTING_PARTS = ("secret", "password", "token", "credential", "private_key")
+
+
+def _audit_snapshot(values: dict) -> dict:
+    return {
+        key: "[REDACTED]" if any(part in key.lower() for part in _SENSITIVE_SETTING_PARTS) else value
+        for key, value in values.items()
+    }
+
+
+async def save_library_settings(db, payload: LibrarySettings, actor: Librarian) -> dict:
     row = await db.get(LibraryConfiguration, 1)
     now = datetime.now(timezone.utc)
+    before = dict(row.values) if row else {}
+    after = payload.model_dump()
+    changed_fields = sorted(
+        key for key in before.keys() | after.keys() if before.get(key) != after.get(key)
+    )
+    if row and not changed_fields:
+        return after
     if row:
-        row.values = payload.model_dump()
+        row.values = after
         row.updated_at = now
     else:
-        db.add(LibraryConfiguration(id=1, values=payload.model_dump(), updated_at=now))
-    db.add(LibrarySettingsAudit(action="Settings updated", actor=actor, created_at=now))
+        db.add(LibraryConfiguration(id=1, values=after, updated_at=now))
+    db.add(LibrarySettingsAudit(
+        action="Settings updated" if before else "Settings created",
+        actor=actor.name,
+        actor_id=actor.id,
+        actor_email=actor.email,
+        changed_fields=changed_fields,
+        before_values=_audit_snapshot(before),
+        after_values=_audit_snapshot(after),
+        created_at=now,
+    ))
     await db.commit()
-    return payload.model_dump()
+    return after
 
 
 async def settings_audit(db) -> list[dict]:
     rows = (await db.scalars(
         select(LibrarySettingsAudit).order_by(LibrarySettingsAudit.created_at.desc(), LibrarySettingsAudit.id.desc()).limit(20)
     )).all()
-    return [{"id": str(row.id), "action": row.action, "user": row.actor, "at": row.created_at.isoformat()} for row in rows]
+    return [{
+        "id": str(row.id),
+        "action": row.action,
+        "user": row.actor,
+        "actorId": row.actor_id,
+        "actorEmail": row.actor_email,
+        "changedFields": row.changed_fields or [],
+        "beforeValues": row.before_values,
+        "afterValues": row.after_values,
+        "at": row.created_at.isoformat(),
+    } for row in rows]

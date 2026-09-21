@@ -206,6 +206,11 @@ http://127.0.0.1:8000/api/library/reports?date_from=2026-08-01&date_to=2026-08-3
 | `PUT` | `http://127.0.0.1:8000/api/library/settings` | Librarian | Validate and save all library settings |
 | `GET` | `http://127.0.0.1:8000/api/library/settings/display` | Public | QR-display wording and room-booking link only |
 
+Settings audit entries include `actorId`, `user`, `actorEmail`, `at`,
+`changedFields`, `beforeValues`, and `afterValues`. Older entries can have null
+snapshots. Values for keys that resemble passwords, secrets, tokens,
+credentials, or private keys are stored as `[REDACTED]`.
+
 The complete settings schema is available interactively in Swagger at
 `http://127.0.0.1:8000/docs` under `LibrarySettings`.
 
