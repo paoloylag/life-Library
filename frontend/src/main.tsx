@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import {
   BarChart3,
+  BookOpen,
   ChevronRight,
   Clock3,
   LayoutDashboard,
@@ -25,6 +26,7 @@ import StaffAccounts from "./StaffAccounts";
 import SettingsPage from "./SettingsPage";
 import LoginPage, { LibrarianSession, staffRoleName } from "./LoginPage";
 import ScanPage from "./ScanPage";
+import SystemGuide from "./SystemGuide";
 import { apiRequest, ApiVisit } from "./api";
 import { defaultSettings, getDisplaySettings } from "./settings";
 import "./index.css";
@@ -100,6 +102,10 @@ const navigation = [
       { label: "Settings", path: "/settings", icon: Settings },
     ],
   },
+  {
+    label: "Help",
+    items: [{ label: "System Guide", path: "/guide", icon: BookOpen }],
+  },
 ];
 function App() {
   const [path, setPath] = React.useState(currentPath());
@@ -144,6 +150,8 @@ function App() {
       ? "Reports"
       : path === "/attendance"
         ? "Attendance"
+      : path === "/guide"
+        ? "System Guide"
       : path === "/accounts"
         ? "Staff Accounts"
         : path.startsWith("/students")
@@ -171,6 +179,8 @@ function App() {
             librarian.role === "librarian" ? <SettingsPage /> : <p role="alert">Librarian permission required.</p>
           ) : path === "/accounts" ? (
             librarian.role !== "auditor" ? <StaffAccounts current={librarian} /> : <p role="alert">Staff account permission required.</p>
+          ) : path === "/guide" ? (
+            <SystemGuide librarian={librarian} />
           ) : path === "/" ? (
             <Dashboard editable={librarian.role !== "auditor"} />
           ) : (
