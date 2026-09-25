@@ -26,6 +26,17 @@ Parameters:
   CloudFrontOriginPrefixListId:
     Type: String
     Description: ID of the com.amazonaws.global.cloudfront.origin-facing managed prefix list
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing environment VPC with working internet egress
+  PublicSubnetAId:
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnetBId:
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnetAId:
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnetBId:
+    Type: AWS::EC2::Subnet::Id
   DatabaseInstanceClass:
     Type: String
     Default: db.t4g.micro
@@ -39,105 +50,11 @@ Conditions:
   IsProduction: !Equals [!Ref Environment, production]
 
 Resources:
-  Vpc:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.84.0.0/16
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      Tags:
-        - {Key: Name, Value: !Sub 'life-library-${Environment}'}
-        - {Key: Project, Value: life-library}
-        - {Key: Environment, Value: !Ref Environment}
-
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-  InternetGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref Vpc
-
-  PublicSubnetA:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref Vpc
-      AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: 10.84.0.0/24
-      MapPublicIpOnLaunch: true
-      Tags: [{Key: Name, Value: !Sub 'life-library-${Environment}-public-a'}]
-  PublicSubnetB:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref Vpc
-      AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: 10.84.1.0/24
-      MapPublicIpOnLaunch: true
-      Tags: [{Key: Name, Value: !Sub 'life-library-${Environment}-public-b'}]
-  PrivateSubnetA:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref Vpc
-      AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: 10.84.10.0/24
-      MapPublicIpOnLaunch: false
-      Tags: [{Key: Name, Value: !Sub 'life-library-${Environment}-private-a'}]
-  PrivateSubnetB:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref Vpc
-      AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: 10.84.11.0/24
-      MapPublicIpOnLaunch: false
-      Tags: [{Key: Name, Value: !Sub 'life-library-${Environment}-private-b'}]
-
-  NatEip:
-    Type: AWS::EC2::EIP
-    DependsOn: InternetGatewayAttachment
-    Properties: {Domain: vpc}
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NatEip.AllocationId
-      SubnetId: !Ref PublicSubnetA
-      Tags: [{Key: Name, Value: !Sub 'life-library-${Environment}'}]
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties: {VpcId: !Ref Vpc}
-  PublicDefaultRoute:
-    Type: AWS::EC2::Route
-    DependsOn: InternetGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-  PublicRouteAssociationA:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties: {SubnetId: !Ref PublicSubnetA, RouteTableId: !Ref PublicRouteTable}
-  PublicRouteAssociationB:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties: {SubnetId: !Ref PublicSubnetB, RouteTableId: !Ref PublicRouteTable}
-  PrivateRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties: {VpcId: !Ref Vpc}
-  PrivateDefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
-  PrivateRouteAssociationA:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties: {SubnetId: !Ref PrivateSubnetA, RouteTableId: !Ref PrivateRouteTable}
-  PrivateRouteAssociationB:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties: {SubnetId: !Ref PrivateSubnetB, RouteTableId: !Ref PrivateRouteTable}
-
   AlbSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow HTTP only from CloudFront origin-facing addresses
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -147,7 +64,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow FastAPI traffic only from the ALB
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8000
@@ -157,7 +74,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow PostgreSQL only from the application
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 5432
@@ -188,7 +105,7 @@ Resources:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: Life Library private database subnets
-      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      SubnetIds: [!Ref PrivateSubnetAId, !Ref PrivateSubnetBId]
   Database:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
@@ -196,7 +113,7 @@ Resources:
     Properties:
       DBInstanceIdentifier: !Sub 'life-library-${Environment}-postgres'
       Engine: postgres
-      EngineVersion: '16.6'
+      EngineVersion: '16.15'
       DBInstanceClass: !Ref DatabaseInstanceClass
       AllocatedStorage: 20
       MaxAllocatedStorage: 100
@@ -334,11 +251,11 @@ Resources:
       Scheme: internet-facing
       Type: application
       SecurityGroups: [!Ref AlbSecurityGroup]
-      Subnets: [!Ref PublicSubnetA, !Ref PublicSubnetB]
+      Subnets: [!Ref PublicSubnetAId, !Ref PublicSubnetBId]
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
       Protocol: HTTP
       Port: 8000
       TargetType: ip
@@ -376,7 +293,7 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups: [!Ref AppSecurityGroup]
-          Subnets: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+          Subnets: [!Ref PrivateSubnetAId, !Ref PrivateSubnetBId]
       LoadBalancers:
         - ContainerName: api
           ContainerPort: 8000

@@ -2,7 +2,9 @@
 
 The library application follows the existing Life Portal deployment pattern:
 CloudFront serves a private S3 frontend and sends `/api/*` to an ALB-backed
-FastAPI service on ECS Fargate. Fargate and RDS run in private subnets.
+FastAPI service on ECS Fargate. Fargate and RDS run in private subnets. Each
+environment reuses its existing Life Portal VPC and NAT egress while keeping
+separate library security groups and application resources.
 
 ## Prerequisites
 
@@ -12,6 +14,7 @@ FastAPI service on ECS Fargate. Fargate and RDS run in private subnets.
 - An immutable `life-library-backend` ECR image tagged with the Git commit SHA.
 - The existing `library/google-service-account` Secrets Manager secret.
 - Google OAuth configured with the final callback URL.
+- Amazon RDS PostgreSQL 16.15, the currently validated Singapore minor release.
 
 Verified shared resources:
 
@@ -46,8 +49,8 @@ aws ec2 describe-managed-prefix-lists `
 
 ## Deploy staging
 
-The stack creates billable resources, including RDS, a NAT gateway, an ALB,
-CloudFront, and Fargate. Review the change set before executing it.
+The stack creates billable resources, including RDS, an ALB, CloudFront, and
+Fargate. Review the change set before executing it.
 
 ```powershell
 aws cloudformation deploy `
@@ -64,7 +67,12 @@ aws cloudformation deploy `
     CloudFrontCertificateArn=arn:aws:acm:us-east-1:165115313524:certificate/19d8be84-fea6-452a-8427-4ed933a4dd10 `
     BackendImageUri=165115313524.dkr.ecr.ap-southeast-1.amazonaws.com/life-library-backend:REPLACE_WITH_COMMIT_SHA `
     GoogleServiceAccountSecretArn=arn:aws:secretsmanager:ap-southeast-1:165115313524:secret:library/google-service-account-hM92ky `
-    CloudFrontOriginPrefixListId=pl-31a34658
+    CloudFrontOriginPrefixListId=pl-31a34658 `
+    VpcId=vpc-0ace0dca3161e7f1c `
+    PublicSubnetAId=subnet-065b777d41b993641 `
+    PublicSubnetBId=subnet-0ea34346051aaa240 `
+    PrivateSubnetAId=subnet-00b390497aac92764 `
+    PrivateSubnetBId=subnet-0de3dca6fb32c2ee7
 ```
 
 After reviewing the generated change set, execute it explicitly in CloudFormation.
