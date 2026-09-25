@@ -92,3 +92,22 @@ After reviewing the generated change set, execute it explicitly in CloudFormatio
 
 Production uses the same template with `Environment=production`. It enables
 Multi-AZ RDS, 14-day RDS backups, 35-day AWS Backup retention, and 90-day logs.
+
+## Current staging deployment
+
+```text
+URL: https://library-staging.life.edu.ph
+Stack: life-library-staging
+ECS cluster/service: life-library-staging / life-library-staging-api
+Frontend bucket: life-library-staging-frontendbucket-jhbta9dsntpq
+CloudFront distribution: E62T77HU1C092
+Database: life-library-staging-postgres (PostgreSQL 16.15)
+Migration head: c31a9e4d27f8
+Backend image: 165115313524.dkr.ecr.ap-southeast-1.amazonaws.com/life-library-backend:ff0cb7b
+```
+
+The Google OAuth secret is populated and the public frontend, API health route,
+and direct SPA routing are verified. Before user acceptance testing, add
+`https://library-staging.life.edu.ph/api/auth/google/callback` to the Google
+OAuth web client's authorized redirect URIs and create the first Librarian using
+the secure one-off procedure in `docs/PRODUCTION_DATABASE_RUNBOOK.md`.
