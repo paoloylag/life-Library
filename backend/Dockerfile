@@ -9,14 +9,18 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY app ./app
 COPY migrations ./migrations
-COPY alembic.ini entrypoint.sh ./
+COPY alembic.ini ./
 
 RUN pip install --upgrade pip && \
     pip install . && \
-    sed -i 's/\r$//' /app/entrypoint.sh && \
     addgroup --system library && \
     adduser --system --ingroup library library && \
-    chown -R library:library /app && \
+    chown -R library:library /app
+
+COPY entrypoint.sh ./
+
+RUN sed -i 's/\r$//' /app/entrypoint.sh && \
+    chown library:library /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 
 USER library
