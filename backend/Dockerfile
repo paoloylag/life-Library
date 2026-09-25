@@ -13,6 +13,7 @@ COPY alembic.ini entrypoint.sh ./
 
 RUN pip install --upgrade pip && \
     pip install . && \
+    sed -i 's/\r$//' /app/entrypoint.sh && \
     addgroup --system library && \
     adduser --system --ingroup library library && \
     chown -R library:library /app && \
