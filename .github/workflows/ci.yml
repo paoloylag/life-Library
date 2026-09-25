@@ -1,0 +1,13 @@
+name: Verify library app
+
+on:
+  push:
+    branches: [main, feature/backend-qr-checkin]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml

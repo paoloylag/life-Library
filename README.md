@@ -6,14 +6,59 @@ Independent FastAPI + React implementation. The `lifetrack-l12` repository is re
 
 See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architecture, implementation status, routes, deployment model, and MVP priorities.
 
+Production database launch and recovery steps are documented in
+[docs/PRODUCTION_DATABASE_RUNBOOK.md](docs/PRODUCTION_DATABASE_RUNBOOK.md).
+
+The reviewed AWS architecture, CloudFormation stack, and staging deployment
+sequence are documented in [infra/aws/README.md](infra/aws/README.md).
+
+All implemented backend routes, request fields, permissions, and local test URLs
+are documented in [docs/API_REFERENCE.md](docs/API_REFERENCE.md).
+
 ## Local setup
 
-1. Copy `.env.example` to `.env` and configure Google OAuth.
-2. Run `docker compose up -d db`.
-3. In `backend`, run `pip install -e ".[dev]"`, then `uvicorn app.main:app --reload`.
-4. In `frontend`, run `npm install`, then `npm run dev`.
+1. Copy `.env.example` to `.env` and configure `DATABASE_URL`. The maintained local
+   dataset uses PostgreSQL; SQLite is supported only for isolated tests.
+2. In `backend`, run `pip install -e ".[dev]"` and `alembic upgrade head`.
+3. Create a real librarian account with `python -m app.create_librarian`, or set
+   `ENABLE_DEV_LIBRARIANS=true` only for an isolated local test server.
+4. Start `uvicorn app.main:app --reload --host 127.0.0.1` in `backend`.
+5. In `frontend`, run `pnpm install`, then `pnpm dev --host 127.0.0.1`.
 
-API docs: `http://localhost:8000/docs`. Web app: `http://localhost:5173/life-Library/`.
+When local test accounts are enabled, the sign-in page shows a `Login as`
+selector for Librarian, Librarian Associate, and Auditor. Selecting one fills the
+email and password fields. This selector and its accounts are unavailable in
+production. Never enable them on a network-exposed server.
+
+## Docker setup
+
+1. Copy `.env.example` to `.env` and set `SECRET_KEY` plus the Google OAuth values.
+2. Set a local `POSTGRES_PASSWORD` in `.env`.
+3. Run `docker compose up --build`.
+
+Compose starts PostgreSQL on port `5432` and the FastAPI service on port `8000`.
+Compose sets `RUN_MIGRATIONS=true`, so the local API container applies migrations
+before starting Uvicorn. Production services must leave this disabled and run
+migrations as an explicit one-off ECS task.
+
+To move an existing SQLite development dataset into an empty migrated PostgreSQL
+database, run `python -m app.migrate_sqlite_to_postgres path/to/source.db` from
+`backend`. Add `--replace` only when the target data should be overwritten.
+
+Set `GOOGLE_SERVICE_ACCOUNT_HOST_FILE` to the local JSON file's absolute path for
+Docker Compose. It is mounted read-only and is not copied into the image. See
+`docs/CURRENT_IMPLEMENTATION.md` for the verified implementation state.
+
+## Database migrations
+
+From `backend`, create a migration after changing a model with:
+
+```text
+alembic revision --autogenerate -m "describe the change"
+alembic upgrade head
+```
+
+API docs: `http://localhost:8000/docs`. Web app: `http://localhost:5173/library/`.
 
 
 ## Google authentication
@@ -27,4 +72,51 @@ The QR scan flow uses Google OpenID Connect through FastAPI. Google client secre
 5. In production set `COOKIE_SECURE=true` and `COOKIE_SAMESITE=none` only when the frontend and API are genuinely cross-site. Prefer hosting both on the same institutional site.
 6. Set the GitHub repository Actions variable `VITE_API_URL` to the public HTTPS FastAPI origin, without a trailing slash.
 
-Pre-provision each user's email and library profile before launch. The first successful Google login links the trusted Google subject ID to the matching email. Accounts without an active profile can authenticate but cannot record attendance.
+Google Directory classifies `/Students` as students, `/Academics/Faculty` as
+faculty, and all other organizational units as non-teaching personnel.
+
+### Google Directory JSON credentials
+
+Google Directory access uses a private service-account JSON file with Workspace
+domain-wide delegation. Configure these backend settings:
+
+```text
+GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service-account.json
+GOOGLE_WORKSPACE_DELEGATED_ADMIN=dt@life.edu.ph
+GOOGLE_DIRECTORY_SCOPE=https://www.googleapis.com/auth/admin.directory.user.readonly
+```
+
+For Docker, set `GOOGLE_SERVICE_ACCOUNT_HOST_FILE` to the Windows host path. Compose
+mounts it read-only at `/run/secrets/google-service-account.json` and sets
+`GOOGLE_SERVICE_ACCOUNT_FILE` inside the container. Never commit or copy the JSON
+into an image.
+
+For an AWS-hosted backend, set `GOOGLE_SERVICE_ACCOUNT_SECRET_ID` to the
+Secrets Manager ARN and `AWS_REGION` to its region. The Python process fetches
+the JSON in memory using its IAM task role; the role needs `secretsmanager:GetSecretValue`
+for that ARN. If both the ARN and local file are set, the ARN takes precedence.
+The local Compose configuration still requires `GOOGLE_SERVICE_ACCOUNT_HOST_FILE`
+and mounts the file for development. Do not put the JSON in an ECS environment
+variable or Docker image.
+
+Current ECS backend values:
+
+```text
+AWS_REGION=ap-southeast-1
+GOOGLE_SERVICE_ACCOUNT_SECRET_ID=arn:aws:secretsmanager:ap-southeast-1:165115313524:secret:library/google-service-account-hM92ky
+GOOGLE_WORKSPACE_DELEGATED_ADMIN=dt@life.edu.ph
+```
+
+Assign `life-library-backend-task-role` as the ECS **task role**. Its inline
+policy must allow `secretsmanager:GetSecretValue` for this exact ARN. The
+separate `ecsTaskExecutionRole` is for ECS image pulls and logs; it does not
+provide credentials to Python code inside the container.
+
+## Local QR check-in test
+
+1. Open the QR display at `http://localhost:5173/library/qr-display`.
+2. Scan the code from a phone on the same Wi-Fi network.
+3. On the verification page, choose **Use local test account**.
+4. Confirm the displayed QR Test Student identity and select **Record library check-in**.
+
+The local test account is available only when `APP_ENV=local`. Production builds do not show it. The current daily QR is issued by FastAPI, stored as a hash, expires at midnight in `Asia/Manila`, and survives browser refreshes.

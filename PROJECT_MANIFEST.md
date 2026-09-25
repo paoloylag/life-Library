@@ -21,7 +21,7 @@ The system records and reports library visits for students, faculty, non-teachin
 | Styling | Tailwind CSS 4 and project CSS |
 | Icons | Lucide React |
 | QR | `qrcode.react` |
-| Reports | ExcelJS, jsPDF, jsPDF AutoTable |
+| Reports | FastAPI aggregation, openpyxl Excel, ReportLab PDF |
 | Backend | Python, FastAPI |
 | Data access | SQLAlchemy async |
 | Database | PostgreSQL |
@@ -56,11 +56,11 @@ PROJECT_MANIFEST.md          Product and implementation inventory
 
 | Module | Current capability | Data status |
 | --- | --- | --- |
-| Dashboard | Daily metrics, recent activity, QR generation, QR display, manual check-in entry point | Seeded/local browser state |
-| Attendance | Check-in-only attendance list, filters, manual check-in with automatic or manual date/time | Seeded/local browser state |
-| Students | Searchable user directory and individual visit-history pages | Seeded/local browser state |
-| Reports | Date and organization filters, executive summary, breakdowns, charts, Excel export, PDF export | Seeded/local browser state |
-| Settings | Library details, QR behavior, attendance rules, academic calendar, school structure | Local browser state |
+| Dashboard | Daily metrics, recent activity, QR generation, QR display, manual check-in entry point | PostgreSQL through FastAPI |
+| Attendance | Check-in-only attendance list, filters, manual check-in with automatic or manual date/time | PostgreSQL through FastAPI |
+| Students | Searchable user directory and individual visit-history pages | PostgreSQL through FastAPI |
+| Reports | Date and organization filters, executive summary, breakdowns, charts, Excel export, PDF export | FastAPI/PostgreSQL |
+| Settings | Library details, QR behavior, attendance rules, academic calendar, school structure | FastAPI/PostgreSQL |
 | QR scan | Token/expiry handling and user-type-aware success presentation | Prototype flow |
 | Dark mode | Persistent theme and module-specific contrast styling | Functional |
 
@@ -95,6 +95,12 @@ PROJECT_MANIFEST.md          Product and implementation inventory
 | `POST` | `/api/library/sessions` | Create or replace the active daily QR session |
 | `POST` | `/api/library/scan/{token}` | Record an authenticated check-in |
 | `GET` | `/api/library/dashboard` | Return today's visit summary |
+| `GET` | `/api/library/users` | Search, filter, sort, and paginate the library-user roster |
+| `GET` | `/api/library/users/{number}` | Return one library-user profile |
+| `GET` | `/api/library/users/{number}/visits` | Return one user's visit history |
+| `GET` | `/api/library/attendance` | Search and paginate the persistent attendance log |
+| `POST` | `/api/library/attendance/manual` | Record a librarian manual check-in |
+| `POST` | `/api/library/scan/{token}/guest` | Record a visitor from a valid daily QR |
 
 ### Database entities
 
@@ -163,19 +169,20 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Check-in-only user experience | Implemented in frontend |
 | Manual check-in interface | Implemented in frontend |
 | Student visit pages | Implemented with seeded data |
-| Reports, charts, Excel, and PDF | Implemented with seeded data |
-| Persistent PostgreSQL attendance | Backend scaffold; frontend integration pending |
-| Librarian login screen/session enforcement | Backend scaffold; UI currently intentionally bypassed |
+| Reports, charts, Excel, and PDF | Integrated with FastAPI data and exports |
+| Persistent PostgreSQL attendance | Dashboard, Attendance, and Library Users integrated |
+| Librarian login screen/session enforcement | Implemented with librarian, librarian associate, and auditor roles |
 | Google SSO check-in | Frontend and backend integrated; credentials, roster profiles, and backend deployment pending |
 | Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
-| Production QR token validation | Backend scaffold; frontend currently generates the daily token in-browser |
-| Server-backed settings | Pending |
-| Deployment of API/database | Pending |
-| Automated backend tests and migrations | Pending |
+| Production QR token validation | Backend-issued token used by authenticated and guest check-ins |
+| Server-backed settings | Implemented; some stored policies await enforcement |
+| Deployment of API/database | Local PostgreSQL verified; managed production database and API deployment pending |
+| User/profile administration | Librarian create/edit and validated CSV roster import implemented |
+| Automated backend tests and migrations | Implemented locally; CI workflow added, remote run pending |
 
 ## MVP Completion Priorities
 
-1. Add database migrations and seed/import tooling.
+1. Provision the managed production PostgreSQL database and apply the verified migrations.
 2. Connect dashboard, attendance, students, and reports to FastAPI.
 3. Implement the backend manual check-in endpoint with audit metadata.
 4. Complete librarian login UI and protect administrative routes.
@@ -189,7 +196,7 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 ## Operating Rules
 
 - A visit is a check-in event; there is no check-out workflow.
-- The prototype automatically rotates its QR code at local midnight; production QR codes must be issued and validated by the backend.
+- The backend issues and validates a daily QR token; librarian and librarian associate accounts can retrieve its URL.
 - School Google authentication identifies QR users; librarian authentication remains credential-based.
 - Manual entries must retain source, librarian, date/time, and adjustment reason for auditability.
 - Duplicate-scan protection must be enforced by the backend.
