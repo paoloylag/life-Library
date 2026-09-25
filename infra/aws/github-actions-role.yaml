@@ -5,9 +5,15 @@ Parameters:
   GitHubOrganization:
     Type: String
     Default: paoloylag
+  GitHubOrganizationId:
+    Type: String
+    Default: '265470974'
   GitHubRepository:
     Type: String
     Default: life-Library
+  GitHubRepositoryId:
+    Type: String
+    Default: '1349099711'
   GitHubEnvironment:
     Type: String
     Default: aws-staging
@@ -31,7 +37,7 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrganization}/${GitHubRepository}:environment:${GitHubEnvironment}'
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrganization}@${GitHubOrganizationId}/${GitHubRepository}@${GitHubRepositoryId}:environment:${GitHubEnvironment}'
       Policies:
         - PolicyName: DeployLifeLibraryStaging
           PolicyDocument:

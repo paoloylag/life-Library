@@ -141,7 +141,9 @@ Provider URL: https://token.actions.githubusercontent.com
 Audience: sts.amazonaws.com
 ```
 
-Copy the resulting provider ARN and deploy the restricted staging role:
+Copy the resulting provider ARN and deploy the restricted staging role. The
+template pins both the GitHub account and repository numeric IDs so renaming or
+recreating either identity cannot silently inherit deployment access:
 
 ```powershell
 aws cloudformation deploy `
