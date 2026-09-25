@@ -84,6 +84,11 @@ class StaffAccountUpdate(BaseModel):
     is_active: bool
 
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
 def staff_json(row: Librarian):
     return {"id": row.id, "name": row.name, "email": row.email,
             "role": row.role, "is_active": row.is_active,
@@ -458,6 +463,21 @@ async def admin_login(request: Request, db=Depends(get_db)):
 @app.get("/api/admin/me")
 async def admin_me(librarian=Depends(current_librarian)):
     return {"id": librarian.id, "name": librarian.name, "email": librarian.email, "role": librarian.role}
+
+
+@app.post("/api/admin/change-password", status_code=204)
+async def change_admin_password(
+    body: PasswordChange,
+    librarian=Depends(current_librarian),
+    db=Depends(get_db),
+):
+    if not verify_password(body.current_password, librarian.password_hash):
+        raise HTTPException(400, "Current password is incorrect")
+    if body.current_password == body.new_password:
+        raise HTTPException(422, "New password must be different from the current password")
+    librarian.password_hash = hash_password(body.new_password)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @app.get("/api/admin/accounts")

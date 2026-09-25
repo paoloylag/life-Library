@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Clock3,
   LayoutDashboard,
+  KeyRound,
   LogOut,
   Maximize2,
   Menu,
@@ -112,6 +113,7 @@ function App() {
   const [librarian, setLibrarian] = React.useState<LibrarianSession | null>(null);
   const [authLoading, setAuthLoading] = React.useState(true);
   const [drawer, setDrawer] = React.useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = React.useState(false);
   const [dark, setDark] = React.useState(
     () => localStorage.getItem("dark-mode") === "true",
   );
@@ -161,7 +163,7 @@ function App() {
             : "Dashboard";
   return (
     <div className={`lifeos-shell ${dark ? "dark" : ""}`}>
-      <Sidebar path={path} navigate={navigate} librarian={librarian} logout={logout} dark={dark} setDark={setDark} />
+      <Sidebar path={path} navigate={navigate} librarian={librarian} logout={logout} dark={dark} setDark={setDark} changePassword={() => setChangePasswordOpen(true)} />
       <div className="lifeos-workspace">
         <Topbar title={title} open={() => setDrawer(true)} />
         <main className="lifeos-content">
@@ -196,9 +198,10 @@ function App() {
               <X size={20} />
             </button>
           </div>
-          <Sidebar path={path} navigate={navigate} compact librarian={librarian} logout={logout} dark={dark} setDark={setDark} />
+          <Sidebar path={path} navigate={navigate} compact librarian={librarian} logout={logout} dark={dark} setDark={setDark} changePassword={() => { setDrawer(false); setChangePasswordOpen(true); }} />
         </div>
       )}
+      {changePasswordOpen && <ChangePasswordDialog close={() => setChangePasswordOpen(false)} />}
     </div>
   );
 }
@@ -223,6 +226,7 @@ function Sidebar({
   logout,
   dark,
   setDark,
+  changePassword,
 }: {
   path: string;
   navigate: (p: string) => void;
@@ -231,6 +235,7 @@ function Sidebar({
   logout: () => void;
   dark: boolean;
   setDark: (value: boolean) => void;
+  changePassword: () => void;
 }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [devAccounts, setDevAccounts] = React.useState<{role:string;name:string;email:string;password:string}[]>([]);
@@ -314,6 +319,7 @@ function Sidebar({
             </select>
           </label>}
           {switchError && <small className="sidebar-switch-error" role="alert">{switchError}</small>}
+          <button role="menuitem" onClick={() => { setAccountOpen(false); changePassword(); }}><KeyRound size={17} />Change password</button>
           <button role="menuitem" onClick={() => setDark(!dark)}>{dark ? <Sun size={17} /> : <Moon size={17} />}{dark ? "Light mode" : "Dark mode"}</button>
           <button role="menuitem" onClick={logout}><LogOut size={17} />Sign out</button>
         </div>}
@@ -325,6 +331,75 @@ function Sidebar({
       </div>
     </aside>
   );
+}
+function ChangePasswordDialog({ close }: { close: () => void }) {
+  const [currentPassword, setCurrentPassword] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmation, setConfirmation] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+
+  React.useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !saving) close();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [close, saving]);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (newPassword !== confirmation) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiRequest("/api/admin/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      setSaved(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to change password.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !saving) close(); }}>
+    <form className="manual-modal password-modal" onSubmit={submit} aria-labelledby="change-password-title">
+      <header>
+        <div>
+          <span className="eyebrow">Account security</span>
+          <h3 id="change-password-title">Change Password</h3>
+          <p>Use at least 10 characters for your new password.</p>
+        </div>
+        <button type="button" className="icon-button" onClick={close} disabled={saving} title="Close"><X size={19} /></button>
+      </header>
+      {saved ? <div className="password-success" role="status">
+        <KeyRound size={28} />
+        <strong>Password changed</strong>
+        <p>Your new password is ready for your next sign-in.</p>
+      </div> : <div className="manual-form password-form">
+        <label className="wide">Current password<input type="password" autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} required autoFocus /></label>
+        <label className="wide">New password<input type="password" autoComplete="new-password" minLength={10} value={newPassword} onChange={event => setNewPassword(event.target.value)} required /><small>Minimum 10 characters.</small></label>
+        <label className="wide">Confirm new password<input type="password" autoComplete="new-password" minLength={10} value={confirmation} onChange={event => setConfirmation(event.target.value)} required /></label>
+        {error && <p className="module-error wide" role="alert">{error}</p>}
+      </div>}
+      <footer>
+        {saved ? <button type="button" className="save-button" onClick={close}>Done</button> : <>
+          <button type="button" className="secondary-button" onClick={close} disabled={saving}>Cancel</button>
+          <button type="submit" className="save-button" disabled={saving}>{saving ? "Changing..." : "Change Password"}</button>
+        </>}
+      </footer>
+    </form>
+  </div>;
 }
 function Topbar({
   title,

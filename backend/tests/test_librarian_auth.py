@@ -1,12 +1,13 @@
 import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
 from app.auth import hash_password
 from app.config import settings
 from app.database import Base, get_db
 from app.dev_librarians import seed_dev_librarians
 from app.main import app
 from app.models import Librarian
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 @pytest.fixture
@@ -101,3 +102,43 @@ async def test_local_dev_accounts_are_opt_in_and_blocked_in_production(auth_cont
     assert (await client.get("/api/admin/dev-accounts")).status_code == 404
     assert (await client.get("/api/admin/me")).status_code == 401
     assert (await client.post("/api/admin/login", json=librarian)).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_librarian_can_change_own_password(auth_context):
+    client, db = auth_context
+    await add_librarian(db, "librarian")
+
+    assert (await client.post("/api/admin/change-password", json={
+        "current_password": "test-password",
+        "new_password": "replacement-password",
+    })).status_code == 401
+
+    await login(client, "librarian")
+    wrong = await client.post("/api/admin/change-password", json={
+        "current_password": "wrong-password",
+        "new_password": "replacement-password",
+    })
+    assert wrong.status_code == 400
+    assert wrong.json()["detail"] == "Current password is incorrect"
+
+    same = await client.post("/api/admin/change-password", json={
+        "current_password": "test-password",
+        "new_password": "test-password",
+    })
+    assert same.status_code == 422
+
+    changed = await client.post("/api/admin/change-password", json={
+        "current_password": "test-password",
+        "new_password": "replacement-password",
+    })
+    assert changed.status_code == 204
+    assert (await client.get("/api/admin/me")).status_code == 200
+
+    await client.post("/api/admin/logout")
+    assert (await client.post("/api/admin/login", json={
+        "email": "librarian@life.edu.ph", "password": "test-password",
+    })).status_code == 401
+    assert (await client.post("/api/admin/login", json={
+        "email": "librarian@life.edu.ph", "password": "replacement-password",
+    })).status_code == 204
