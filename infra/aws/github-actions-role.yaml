@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: GitHub Actions OIDC deployment role for Life Library staging
+Description: GitHub Actions OIDC deployment role for a Life Library environment
 
 Parameters:
   GitHubOrganization:
@@ -17,6 +17,10 @@ Parameters:
   GitHubEnvironment:
     Type: String
     Default: aws-staging
+  DeploymentEnvironment:
+    Type: String
+    Default: staging
+    AllowedValues: [staging, production]
   GitHubOidcProviderArn:
     Type: String
     Description: ARN of the account's token.actions.githubusercontent.com OIDC provider
@@ -25,7 +29,7 @@ Resources:
   DeploymentRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: life-library-github-staging-deploy
+      RoleName: !Sub 'life-library-github-${DeploymentEnvironment}-deploy'
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -39,7 +43,7 @@ Resources:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
                 token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrganization}@${GitHubOrganizationId}/${GitHubRepository}@${GitHubRepositoryId}:environment:${GitHubEnvironment}'
       Policies:
-        - PolicyName: DeployLifeLibraryStaging
+        - PolicyName: !Sub 'DeployLifeLibrary${DeploymentEnvironment}'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -70,14 +74,14 @@ Resources:
               - Sid: PassApplicationRoles
                 Effect: Allow
                 Action: iam:PassRole
-                Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/life-library-staging-*'
+                Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/life-library-${DeploymentEnvironment}-*'
                 Condition:
                   StringEquals:
                     iam:PassedToService: ecs-tasks.amazonaws.com
               - Sid: ReadStackOutputs
                 Effect: Allow
                 Action: cloudformation:DescribeStacks
-                Resource: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/life-library-staging/*'
+                Resource: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/life-library-${DeploymentEnvironment}/*'
               - Sid: PublishFrontend
                 Effect: Allow
                 Action:
@@ -86,8 +90,8 @@ Resources:
                   - s3:ListBucket
                   - s3:PutObject
                 Resource:
-                  - arn:aws:s3:::life-library-staging-frontendbucket-*
-                  - arn:aws:s3:::life-library-staging-frontendbucket-*/*
+                  - !Sub 'arn:${AWS::Partition}:s3:::life-library-${DeploymentEnvironment}-frontendbucket-*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::life-library-${DeploymentEnvironment}-frontendbucket-*/*'
               - Sid: RefreshCloudFront
                 Effect: Allow
                 Action:

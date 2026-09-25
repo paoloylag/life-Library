@@ -156,6 +156,9 @@ aws cloudformation deploy `
     GitHubOidcProviderArn=arn:aws:iam::165115313524:oidc-provider/token.actions.githubusercontent.com
 ```
 
+Production uses the same role template in a separate stack with
+`DeploymentEnvironment=production` and `GitHubEnvironment=aws-production`.
+
 Read the role ARN:
 
 ```powershell
@@ -179,3 +182,27 @@ AWS_DEPLOY_ROLE_ARN=<DeploymentRoleArn output>
 Restrict the environment to `feature/backend-qr-checkin`. Optional required
 reviewers can be enabled before staging releases. Keep production in a separate
 GitHub environment and IAM role; the staging role cannot deploy production.
+
+## Current production deployment
+
+```text
+URL: https://library.life.edu.ph
+Stack: life-library-production
+ECS cluster/service: life-library-production / life-library-production-api
+Frontend bucket: life-library-production-frontendbucket-aom3hwirjkcv
+CloudFront distribution: E2VQ0JG5I6PKB4
+Database: life-library-production-postgres (PostgreSQL 16.15, Multi-AZ)
+Backend image: 165115313524.dkr.ecr.ap-southeast-1.amazonaws.com/life-library-backend:6549f2f7708c083c4a21821b7da9f5c3bf12c5dd
+Initial snapshot: life-library-production-initial-20260925
+```
+
+Production uses the protected `aws-production` GitHub environment and the
+`life-library-github-production-deploy` role. Only `main` may deploy. The
+workflow remains manually dispatched so every production release is deliberate.
+
+Before Google sign-in is opened to users, add this authorized redirect URI to
+the Google OAuth web client:
+
+```text
+https://library.life.edu.ph/api/auth/google/callback
+```
