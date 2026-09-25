@@ -136,6 +136,9 @@ def safe_scan_path(value: str) -> str:
 
 def scan_url(request: Request, token: str) -> str:
     if settings.app_env != "production":
+        configured = urlsplit(settings.frontend_url)
+        if configured.hostname not in ("localhost", "127.0.0.1", "::1"):
+            return f"{settings.frontend_url.rstrip('/')}/scan/{token}"
         origin = request.headers.get("origin", "").rstrip("/")
         if origin:
             base_path = urlsplit(settings.frontend_url).path.rstrip("/")
