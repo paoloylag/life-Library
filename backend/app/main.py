@@ -1,6 +1,7 @@
 import asyncio
 import csv
 import io
+import logging
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -44,6 +45,8 @@ from app.models import (
     StudentProfile,
     User,
 )
+
+logger = logging.getLogger(__name__)
 from app.report_exports import export_excel, export_pdf
 from app.reports import ReportFilters, build_report
 from app.services import (
@@ -351,6 +354,7 @@ async def callback(request: Request, db=Depends(get_db)):
         )
         return RedirectResponse(frontend_redirect(next_path, error))
     except Exception:
+        logger.exception("Google authentication callback failed")
         return RedirectResponse(frontend_redirect(next_path, "google_auth_failed"))
 
     response = RedirectResponse(frontend_redirect(next_path))

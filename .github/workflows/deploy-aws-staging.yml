@@ -148,6 +148,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_URL: ''
+          VITE_BACKEND_ENABLED: 'true'
           VITE_BASE_PATH: /
           VITE_PUBLIC_APP_URL: ${{ env.PUBLIC_URL }}
         run: |

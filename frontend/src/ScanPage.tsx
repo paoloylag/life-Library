@@ -4,7 +4,7 @@ import {SeedUser, UserType} from './data'
 
 const BASE=import.meta.env.BASE_URL
 const configuredApi=(import.meta.env.VITE_API_URL||'').replace(/\/$/,'')
-const backendEnabled=import.meta.env.DEV||Boolean(configuredApi)||['localhost','127.0.0.1'].includes(location.hostname)
+const backendEnabled=import.meta.env.DEV||import.meta.env.VITE_BACKEND_ENABLED==='true'||Boolean(configuredApi)
 const api=(path:string)=>configuredApi+path
 
 type AuthProfile={number:string;user_type:string;program:string;year_level:string;section:string;department:string}
