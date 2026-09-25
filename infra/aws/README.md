@@ -111,3 +111,67 @@ and direct SPA routing are verified. Before user acceptance testing, add
 `https://library-staging.life.edu.ph/api/auth/google/callback` to the Google
 OAuth web client's authorized redirect URIs and create the first Librarian using
 the secure one-off procedure in `docs/PRODUCTION_DATABASE_RUNBOOK.md`.
+
+## GitHub Actions deployment
+
+The `Deploy AWS staging` workflow performs a complete application release:
+
+1. Runs backend tests and builds the frontend.
+2. Builds and pushes an immutable commit-SHA backend image to ECR.
+3. Registers a new ECS task definition without changing the running service.
+4. Runs Alembic against that exact task revision and stops on migration failure.
+5. Updates ECS, waits for service stability, and relies on the deployment circuit
+   breaker for an unhealthy rollout.
+6. Builds and uploads the frontend, invalidates CloudFront, and smoke-tests the
+   home page, a direct SPA route, and API health.
+
+The workflow is initially manual under **Actions -> Deploy AWS staging -> Run
+workflow**. It uses GitHub OIDC and does not store AWS access keys.
+
+### One-time AWS setup
+
+If this AWS account does not have GitHub's OIDC provider, create it in IAM under
+**Identity providers -> Add provider**:
+
+```text
+Provider type: OpenID Connect
+Provider URL: https://token.actions.githubusercontent.com
+Audience: sts.amazonaws.com
+```
+
+Copy the resulting provider ARN and deploy the restricted staging role:
+
+```powershell
+aws cloudformation deploy `
+  --profile life-library `
+  --region ap-southeast-1 `
+  --stack-name life-library-github-actions `
+  --template-file infra/aws/github-actions-role.yaml `
+  --capabilities CAPABILITY_NAMED_IAM `
+  --parameter-overrides `
+    GitHubOidcProviderArn=arn:aws:iam::165115313524:oidc-provider/token.actions.githubusercontent.com
+```
+
+Read the role ARN:
+
+```powershell
+aws cloudformation describe-stacks `
+  --profile life-library `
+  --region ap-southeast-1 `
+  --stack-name life-library-github-actions `
+  --query "Stacks[0].Outputs[?OutputKey=='DeploymentRoleArn'].OutputValue" `
+  --output text
+```
+
+### One-time GitHub setup
+
+In the repository, open **Settings -> Environments**, create `aws-staging`, and
+add the environment variable below:
+
+```text
+AWS_DEPLOY_ROLE_ARN=<DeploymentRoleArn output>
+```
+
+Restrict the environment to `feature/backend-qr-checkin`. Optional required
+reviewers can be enabled before staging releases. Keep production in a separate
+GitHub environment and IAM role; the staging role cannot deploy production.
