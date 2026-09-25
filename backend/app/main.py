@@ -2,6 +2,7 @@ import asyncio
 import csv
 import io
 import logging
+import re
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -30,7 +31,7 @@ from app.config import settings
 from app.database import SessionLocal, get_db, init_database
 from app.dev_librarians import DEV_ACCOUNTS, dev_accounts_enabled, seed_dev_librarians
 from app.google_directory import lookup_directory_identity
-from app.import_roster import import_rows, read_roster_text
+from app.import_roster import import_rows, read_roster_text, read_staff_text
 from app.library_settings import (
     LibrarySettings,
     read_library_settings,
@@ -108,10 +109,22 @@ class LibraryUserInput(BaseModel):
     section: str = Field(default="", max_length=120)
     department: str = Field(default="", max_length=120)
     organization: str = Field(default="", max_length=180)
+    preferred_name: str = Field(default="", max_length=120)
+    employment_status: str = Field(default="", max_length=80)
+    position: str = Field(default="", max_length=180)
+    middle_name: str = Field(default="", max_length=120)
+    immediate_supervisor: str = Field(default="", max_length=180)
+    date_hired: str = Field(default="", max_length=80)
+    regularization_date: str = Field(default="", max_length=80)
+    contact_number: str = Field(default="", max_length=80)
     is_active: bool = True
 
 
 USER_CATEGORIES = {"student", "faculty", "non-teaching personnel", "administrator", "visitor"}
+
+
+def is_generated_staff_number(number: str) -> bool:
+    return bool(re.fullmatch(r"STAFF-[A-F0-9]{12}", number))
 
 
 def safe_csv_value(value) -> str:
@@ -124,8 +137,8 @@ def clean_user_input(body: LibraryUserInput):
     values["email"] = values["email"].lower()
     if not values["number"] or len(values["name"]) < 2 or values["user_type"] not in USER_CATEGORIES:
         raise HTTPException(422, "Enter a valid number, name, and user category")
-    if values["user_type"] != "visitor" and ("@" not in values["email"] or values["email"].endswith("@visitor.local")):
-        raise HTTPException(422, "An email address is required for a non-visitor account")
+    if values["user_type"] == "student" and ("@" not in values["email"] or values["email"].endswith("@visitor.local")):
+        raise HTTPException(422, "An email address is required for a student account")
     if values["email"] and ("@" not in values["email"] or values["email"].startswith("@")):
         raise HTTPException(422, "Enter a valid email address")
     return values
@@ -160,9 +173,10 @@ def frontend_redirect(path: str, error: str | None = None) -> str:
 def profile_json(profile: StudentProfile, visit_count: int = 0, last_visit=None):
     return {
         "number": profile.student_number,
+        "display_number": "" if is_generated_staff_number(profile.student_number) else profile.student_number,
         "name": profile.user.name,
         "email": profile.user.email
-        if not profile.user.email.endswith("@visitor.local")
+        if not profile.user.email.endswith(("@visitor.local", "@staff.local"))
         else "",
         "user_type": profile.user_type,
         "program": profile.program or "",
@@ -170,6 +184,14 @@ def profile_json(profile: StudentProfile, visit_count: int = 0, last_visit=None)
         "section": profile.section or "",
         "department": profile.department or "",
         "organization": profile.organization or "",
+        "preferred_name": profile.preferred_name or "",
+        "employment_status": profile.employment_status or "",
+        "position": profile.position or "",
+        "middle_name": profile.middle_name or "",
+        "immediate_supervisor": profile.immediate_supervisor or "",
+        "date_hired": profile.date_hired or "",
+        "regularization_date": profile.regularization_date or "",
+        "contact_number": profile.contact_number or "",
         "is_active": profile.is_active and profile.user.is_active,
         "managed_by_google": bool(profile.user.google_id),
         "visit_count": visit_count,
@@ -639,6 +661,8 @@ async def library_users(
                 StudentProfile.program.ilike(term),
                 StudentProfile.section.ilike(term),
                 StudentProfile.department.ilike(term),
+                StudentProfile.position.ilike(term),
+                StudentProfile.preferred_name.ilike(term),
             )
         )
     if user_type.strip():
@@ -704,6 +728,8 @@ async def export_library_users_csv(
                 StudentProfile.program.ilike(term),
                 StudentProfile.section.ilike(term),
                 StudentProfile.department.ilike(term),
+                StudentProfile.position.ilike(term),
+                StudentProfile.preferred_name.ilike(term),
             )
         )
     if user_type.strip():
@@ -731,20 +757,36 @@ async def export_library_users_csv(
             "section",
             "department",
             "organization",
+            "preferred_name",
+            "employment_status",
+            "position",
+            "middle_name",
+            "immediate_supervisor",
+            "date_hired",
+            "regularization_date",
+            "contact_number",
             "is_active",
         )
     )
     for profile in profiles:
         values = (
-            profile.student_number,
+            "" if is_generated_staff_number(profile.student_number) else profile.student_number,
             profile.user.name,
-            "" if profile.user.email.endswith("@visitor.local") else profile.user.email,
+            "" if profile.user.email.endswith(("@visitor.local", "@staff.local")) else profile.user.email,
             profile.user_type,
             profile.program,
             profile.year_level,
             profile.section,
             profile.department,
             profile.organization,
+            profile.preferred_name,
+            profile.employment_status,
+            profile.position,
+            profile.middle_name,
+            profile.immediate_supervisor,
+            profile.date_hired,
+            profile.regularization_date,
+            profile.contact_number,
             str(profile.is_active and profile.user.is_active).lower(),
         )
         writer.writerow(safe_csv_value(value) for value in values)
@@ -779,12 +821,40 @@ async def import_library_users_csv(
     }
 
 
+@app.post("/api/library/users/import-staff.csv")
+async def import_library_staff_csv(
+    request: Request,
+    dry_run: bool = True,
+    librarian=Depends(librarian_admin),
+):
+    body = await request.body()
+    if not body or len(body) > 5 * 1024 * 1024:
+        raise HTTPException(422, "Select a CSV file no larger than 5 MB")
+    try:
+        rows, ignored_columns = read_staff_text(body.decode("utf-8-sig"))
+        result = await import_rows(rows, dry_run=dry_run)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {
+        "status": "validated" if dry_run else "imported",
+        "total": len(rows),
+        "created": result.created,
+        "updated": result.updated,
+        "ignored_columns": ignored_columns,
+        "generated_ids": sum(row["number"].startswith("STAFF-") for row in rows),
+        "missing_emails": sum(row["email"].endswith("@staff.local") for row in rows),
+    }
+
+
 @app.post("/api/library/users", status_code=201)
 async def create_library_user(
     body: LibraryUserInput, librarian=Depends(librarian_admin), db=Depends(get_db)
 ):
     values = clean_user_input(body)
-    email = values["email"] or f"visitor-{uuid4().hex}@visitor.local"
+    email = values["email"] or (
+        f"visitor-{uuid4().hex}@visitor.local" if values["user_type"] == "visitor"
+        else f"staff-{values['number'].lower()}@staff.local"
+    )
     if await db.scalar(select(User.id).where(User.email == email)) or await db.scalar(
         select(StudentProfile.id).where(StudentProfile.student_number == values["number"])
     ):
@@ -795,7 +865,7 @@ async def create_library_user(
     profile = StudentProfile(
         user_id=user.id, student_number=values["number"], user_type=values["user_type"],
         is_active=values["is_active"], **{key: values[key] or None for key in
-        ("program", "year_level", "section", "department", "organization")}
+        ("program", "year_level", "section", "department", "organization", "preferred_name", "employment_status", "position", "middle_name", "immediate_supervisor", "date_hired", "regularization_date", "contact_number")}
     )
     db.add(profile)
     try:
@@ -824,6 +894,8 @@ async def update_library_user(
         raise HTTPException(409, "Google-linked email and user number cannot be changed here")
     if not values["email"] and values["user_type"] == "visitor":
         values["email"] = profile.user.email
+    elif not values["email"] and values["user_type"] != "student":
+        values["email"] = f"staff-{values['number'].lower()}@staff.local"
     if values["email"] != profile.user.email and await db.scalar(
         select(User.id).where(User.email == values["email"])
     ):
@@ -839,7 +911,7 @@ async def update_library_user(
     profile.student_number = values["number"]
     profile.user_type = values["user_type"]
     profile.is_active = values["is_active"]
-    for key in ("program", "year_level", "section", "department", "organization"):
+    for key in ("program", "year_level", "section", "department", "organization", "preferred_name", "employment_status", "position", "middle_name", "immediate_supervisor", "date_hired", "regularization_date", "contact_number"):
         setattr(profile, key, values[key] or None)
     try:
         await db.commit()

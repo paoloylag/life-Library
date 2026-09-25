@@ -1,3 +1,6 @@
+import csv
+import io
+
 import pytest
 from app.config import settings
 from app.auth import hash_password
@@ -6,7 +9,47 @@ from app.main import app
 from app.models import Librarian, StudentProfile, User
 from app.services import get_or_create_daily_session
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+
+@pytest.mark.asyncio
+async def test_staff_csv_preview_and_import(client, api_db, monkeypatch):
+    monkeypatch.setattr(
+        "app.import_roster.SessionLocal",
+        async_sessionmaker(api_db.bind, expire_on_commit=False),
+    )
+    csv_data = (
+        "Employee ID,Lsst Name,First Name,Middle Name,Preferred Name,Employment Status,Department,Position,Immediate Supervisor,Date Hired,Regularization Date,Contact No.,User Type\n"
+        "NA,Cruz,Jamie,Lee,Jay,Part-time,Academics,Adjunct Faculty,Dean,July 1 2026,na,09123456789,faculty\n"
+    )
+    headers = {"Content-Type": "text/csv"}
+    preview = await client.post(
+        "/api/library/users/import-staff.csv?dry_run=true",
+        content=csv_data,
+        headers=headers,
+    )
+    assert preview.status_code == 200
+    assert preview.json()["created"] == 1
+    assert preview.json()["generated_ids"] == 1
+    assert preview.json()["missing_emails"] == 1
+    assert await api_db.scalar(select(func.count(StudentProfile.id))) == 0
+
+    applied = await client.post(
+        "/api/library/users/import-staff.csv?dry_run=false",
+        content=csv_data,
+        headers=headers,
+    )
+    assert applied.status_code == 200
+    profiles = (await api_db.scalars(select(StudentProfile))).all()
+    assert len(profiles) == 1
+    assert profiles[0].user_type == "faculty"
+    assert profiles[0].middle_name == "Lee"
+    assert profiles[0].regularization_date is None
+    users = await client.get("/api/library/users")
+    assert users.json()["items"][0]["display_number"] == ""
+    exported = await client.get("/api/library/users/export.csv")
+    assert list(csv.DictReader(io.StringIO(exported.text.lstrip("\ufeff"))))[0]["number"] == ""
 
 
 @pytest.fixture

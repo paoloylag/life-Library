@@ -123,6 +123,7 @@ records the current time.
 | `GET` | `http://127.0.0.1:8000/api/library/users/export.csv` | Staff | Download all users matching the active search and category filters |
 | `POST` | `http://127.0.0.1:8000/api/library/users/import.csv?dry_run=true` | Librarian | Validate a roster CSV and return create/update counts |
 | `POST` | `http://127.0.0.1:8000/api/library/users/import.csv?dry_run=false` | Librarian | Apply a validated roster CSV bulk update |
+| `POST` | `http://127.0.0.1:8000/api/library/users/import-staff.csv?dry_run=true` | Librarian | Preview an employee masterlist CSV; set `dry_run=false` to apply |
 | `POST` | `http://127.0.0.1:8000/api/library/users` | Librarian | Create a library user |
 | `GET` | `http://127.0.0.1:8000/api/library/users/{number}` | Staff | User profile and visit summary |
 | `PUT` | `http://127.0.0.1:8000/api/library/users/{number}` | Librarian | Update a library user |
@@ -160,6 +161,20 @@ CSV imports use the columns shown in `docs/roster-template.csv`, accept files up
 to 5 MB, and reconcile existing SSO profiles by email before creating users.
 Google-managed identity and category values are preserved while program, year
 level, section, department, organization, and active status are updated.
+
+The directory's **Import staff masterlist** action accepts CSV headers from the
+AY 26-27 employee masterlist: `Employee ID`, `Lsst Name` (or `Last Name`),
+`First Name`, `Middle Name`, `Preferred Name`, `Employment Status`, `Department`,
+`Position`, `Immediate Supervisor`, `Date Hired`, `Regularization Date`, and
+`Contact No.` A `User Type` column is required for every row, using `faculty`,
+`non-teaching personnel` (also accepts `Non-Teaching`), or `administrator`. Optional `Email` and `Status`
+columns are accepted. Missing emails are stored with an internal placeholder
+and can be added later. Missing or `NA` employee IDs remain blank in the
+directory and CSV export, and can be entered in the profile editor. Stable
+internal identifiers based on name and department support reimport. The preview
+modal reports counts for blank IDs, missing emails, and ignored columns.
+Unused blank payroll and personal-identifier columns in the source masterlist
+are not stored in the library directory.
 
 ## Attendance and Dashboard
 

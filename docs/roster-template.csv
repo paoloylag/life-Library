@@ -1,4 +1,4 @@
-number,name,email,user_type,program,year_level,section,department,organization,is_active
-LC-2026-00001,Sample Student,student@life.edu.ph,student,BS-ENTREP,1st Year,1A,,,true
-FAC-00001,Sample Faculty,faculty@life.edu.ph,faculty,,,,Academic Affairs,,true
-VIS-00001,Sample Visitor,,visitor,,,,,External Organization,true
+number,name,email,user_type,program,year_level,section,department,organization,preferred_name,employment_status,position,middle_name,immediate_supervisor,date_hired,regularization_date,contact_number,is_active
+LC-2026-00001,Sample Student,student@life.edu.ph,student,BS-ENTREP,1st Year,1A,,,,,,,,,,,true
+FAC-00001,Sample Faculty,faculty@life.edu.ph,faculty,,,,Academic Affairs,,Sample,Part-time,Adjunct Faculty,,,,,,true
+VIS-00001,Sample Visitor,,visitor,,,,,External Organization,,,,,,,,,true
