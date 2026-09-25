@@ -9,6 +9,9 @@ See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architectu
 Production database launch and recovery steps are documented in
 [docs/PRODUCTION_DATABASE_RUNBOOK.md](docs/PRODUCTION_DATABASE_RUNBOOK.md).
 
+The reviewed AWS architecture, CloudFormation stack, and staging deployment
+sequence are documented in [infra/aws/README.md](infra/aws/README.md).
+
 All implemented backend routes, request fields, permissions, and local test URLs
 are documented in [docs/API_REFERENCE.md](docs/API_REFERENCE.md).
 
@@ -34,7 +37,9 @@ production. Never enable them on a network-exposed server.
 3. Run `docker compose up --build`.
 
 Compose starts PostgreSQL on port `5432` and the FastAPI service on port `8000`.
-The API container runs `alembic upgrade head` before starting Uvicorn.
+Compose sets `RUN_MIGRATIONS=true`, so the local API container applies migrations
+before starting Uvicorn. Production services must leave this disabled and run
+migrations as an explicit one-off ECS task.
 
 To move an existing SQLite development dataset into an empty migrated PostgreSQL
 database, run `python -m app.migrate_sqlite_to_postgres path/to/source.db` from

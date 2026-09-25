@@ -124,7 +124,10 @@ The ECS service is not running yet; production database, OAuth, URL, and other
 secret settings are still required before launch.
 
 The production database launch and restore process is documented in
-`docs/PRODUCTION_DATABASE_RUNBOOK.md`. AWS access has been verified, but managed
+`docs/PRODUCTION_DATABASE_RUNBOOK.md`. AWS access has been verified through the
+`life-library` IAM Identity Center profile. The shared CloudFront certificate
+for `library.life.edu.ph` and `library-staging.life.edu.ph` is issued. The
+validated CloudFormation definition is in `infra/aws/app-stack.yaml`; managed
 RDS provisioning is intentionally paused until production deployment resumes.
 
 ## Secrets

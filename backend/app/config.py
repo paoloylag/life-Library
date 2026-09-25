@@ -1,12 +1,19 @@
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import quote_plus
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_env: str = "local"
     database_url: str = "sqlite+aiosqlite:///./library_attendance.db"
+    database_host: str = ""
+    database_port: int = 5432
+    database_name: str = "library_attendance"
+    database_user: str = ""
+    database_password: str = ""
     secret_key: str = "development-only"
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -27,13 +34,32 @@ class Settings(BaseSettings):
     enable_dev_librarians: bool = False
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
+    @model_validator(mode="after")
+    def assemble_database_url(self):
+        if not self.database_host:
+            return self
+        if not self.database_user or not self.database_password:
+            raise ValueError(
+                "DATABASE_USER and DATABASE_PASSWORD are required when DATABASE_HOST is set"
+            )
+        user = quote_plus(self.database_user)
+        password = quote_plus(self.database_password)
+        self.database_url = (
+            f"postgresql+asyncpg://{user}:{password}@{self.database_host}:"
+            f"{self.database_port}/{self.database_name}"
+        )
+        return self
+
     def validate_production_auth(self) -> None:
         if self.app_env != "production":
             return
         if len(self.secret_key) < 32 or self.secret_key in (
-            "development-only", "replace-with-a-long-random-secret",
+            "development-only",
+            "replace-with-a-long-random-secret",
         ):
-            raise RuntimeError("Production requires a unique SECRET_KEY of at least 32 characters")
+            raise RuntimeError(
+                "Production requires a unique SECRET_KEY of at least 32 characters"
+            )
         if not self.cookie_secure:
             raise RuntimeError("Production requires COOKIE_SECURE=true")
 

@@ -28,7 +28,15 @@ URL-encode special characters in the username and password.
 
 ## 2. Configure the ECS task
 
-Supply `DATABASE_URL` from Secrets Manager and set `APP_ENV=production`.
+Supply either `DATABASE_URL` from Secrets Manager or the individual
+`DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, and
+`DATABASE_PASSWORD` settings. Set `APP_ENV=production` and keep automatic
+migrations disabled:
+
+```text
+RUN_MIGRATIONS=false
+```
+
 Disable development accounts:
 
 ```text
@@ -48,7 +56,7 @@ alembic upgrade head
 alembic current
 ```
 
-The expected migration head is `b4d718c70aa1`. A failed migration blocks the
+The expected migration head is `c31a9e4d27f8`. A failed migration blocks the
 release. Do not seed production data.
 
 ## 4. Create the first Librarian
@@ -97,7 +105,7 @@ Attendance records are never deleted by this command.
 
 Confirm all of the following:
 
-1. `alembic current` reports `b4d718c70aa1`.
+1. `alembic current` reports `c31a9e4d27f8`.
 2. The Librarian can sign in and open Settings.
 3. The roster count and several sample profiles are correct.
 4. A manual check-in persists after an API restart.
@@ -119,8 +127,7 @@ Delete the temporary restored instance after verification. Repeat the restore
 rehearsal at least quarterly and after substantial schema changes. Monitor RDS
 events for backup failures, low storage, high CPU, and connection exhaustion.
 
-## Current Blocker
+## AWS access
 
-The local AWS CLI currently has no active credentials. RDS inspection and
-provisioning cannot proceed until `aws login` or the approved IAM Identity
-Center profile is configured and `aws sts get-caller-identity` succeeds.
+Use the `life-library` IAM Identity Center profile. Its SSO portal is hosted in
+`us-east-1`; application resources remain in `ap-southeast-1`.

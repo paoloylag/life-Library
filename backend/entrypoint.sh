@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
 
-alembic upgrade head
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+  alembic upgrade head
+fi
 if [ "${APP_ENV:-local}" != "production" ]; then
   python -m app.seed_data
 fi
