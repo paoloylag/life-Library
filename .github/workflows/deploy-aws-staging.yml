@@ -1,6 +1,8 @@
 name: Deploy AWS staging
 
 on:
+  push:
+    branches: [feature/backend-qr-checkin]
   workflow_dispatch:
 
 permissions:

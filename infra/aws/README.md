@@ -125,8 +125,10 @@ The `Deploy AWS staging` workflow performs a complete application release:
 6. Builds and uploads the frontend, invalidates CloudFront, and smoke-tests the
    home page, a direct SPA route, and API health.
 
-The workflow is initially manual under **Actions -> Deploy AWS staging -> Run
-workflow**. It uses GitHub OIDC and does not store AWS access keys.
+The workflow deploys staging whenever `feature/backend-qr-checkin` is pushed. It
+can also be started manually from **Actions -> Deploy AWS staging -> Run
+workflow** after the workflow reaches the default branch. It uses GitHub OIDC
+and does not store AWS access keys.
 
 ### One-time AWS setup
 
