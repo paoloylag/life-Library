@@ -183,4 +183,3 @@ jobs:
           curl --fail --silent --show-error --retry 8 --retry-delay 10 "$PUBLIC_URL/attendance" > /dev/null
           HEALTH=$(curl --fail --silent --show-error --retry 8 --retry-delay 10 "$PUBLIC_URL/api/health")
           echo "$HEALTH" | jq -e '.status == "ok"' > /dev/null
-

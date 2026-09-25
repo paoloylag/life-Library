@@ -41,4 +41,3 @@ jobs:
       - name: Build frontend
         run: pnpm build
         working-directory: frontend
-

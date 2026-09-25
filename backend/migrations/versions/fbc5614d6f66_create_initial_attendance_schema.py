@@ -1,7 +1,7 @@
 """create initial attendance schema
 
 Revision ID: fbc5614d6f66
-Revises: 
+Revises:
 Create Date: 2026-09-10 16:49:24.209120
 
 """
