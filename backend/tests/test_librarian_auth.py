@@ -75,15 +75,30 @@ async def test_librarian_roles_authorize_reads_and_mutations(auth_context):
     assert (await client.get("/api/library/sessions/current")).status_code == 403
     assert (await client.post("/api/library/attendance/manual", json={})).status_code == 403
     assert (await client.get("/api/library/settings")).status_code == 403
+    assert (
+        await client.patch(
+            "/api/library/users/missing/archive", json={"archived": True}
+        )
+    ).status_code == 403
     await client.post("/api/admin/logout")
 
     await login(client, "librarian_associate")
     assert (await client.get("/api/library/sessions/current")).status_code == 200
     assert (await client.get("/api/library/settings")).status_code == 403
+    assert (
+        await client.patch(
+            "/api/library/users/missing/archive", json={"archived": True}
+        )
+    ).status_code == 403
     await client.post("/api/admin/logout")
 
     await login(client, "librarian")
     assert (await client.get("/api/library/settings")).status_code == 200
+    assert (
+        await client.patch(
+            "/api/library/users/missing/archive", json={"archived": True}
+        )
+    ).status_code == 404
     assert (await client.get("/api/admin/me")).json()["role"] == "librarian"
 
 

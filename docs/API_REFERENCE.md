@@ -127,12 +127,14 @@ records the current time.
 | `POST` | `http://127.0.0.1:8000/api/library/users` | Librarian | Create a library user |
 | `GET` | `http://127.0.0.1:8000/api/library/users/{number}` | Staff | User profile and visit summary |
 | `PUT` | `http://127.0.0.1:8000/api/library/users/{number}` | Librarian | Update a library user |
+| `PATCH` | `http://127.0.0.1:8000/api/library/users/{number}/archive` | Librarian | Archive or restore a user while preserving attendance history |
 | `GET` | `http://127.0.0.1:8000/api/library/users/{number}/visits` | Staff | Complete visit history for a user |
 
 List query parameters:
 
 - `q`: name, email, user number, program, section, or department search
 - `user_type`: exact normalized user category
+- `status`: `active` (default), `archived`, or `all`
 - `page`: integer, minimum `1`
 - `page_size`: integer from `1` to `200`, default `50`
 
@@ -156,6 +158,11 @@ Create and update body:
 Valid categories are `student`, `faculty`, `non-teaching personnel`,
 `administrator`, and `visitor`. Google-linked email, number, and category fields
 remain managed by Google Workspace.
+
+Archive a user with `{"archived": true}` and restore one with
+`{"archived": false}`. Archived users remain available in the Archived
+directory view and retain their complete visit history, but they cannot use QR
+or manual check-in.
 
 CSV imports use the columns shown in `docs/roster-template.csv`, accept files up
 to 5 MB, and reconcile existing SSO profiles by email before creating users.

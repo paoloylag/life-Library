@@ -130,6 +130,41 @@ async def test_user_search_manual_check_in_and_history(client, api_db):
 
 
 @pytest.mark.asyncio
+async def test_archive_hides_user_preserves_visits_and_can_restore(client, api_db):
+    await add_user(api_db)
+    recorded = await client.post(
+        "/api/library/attendance/manual",
+        json={"user_number": "LC-001", "note": "Before archive"},
+    )
+    assert recorded.status_code == 200
+
+    archived = await client.patch(
+        "/api/library/users/LC-001/archive", json={"archived": True}
+    )
+    assert archived.status_code == 200
+    assert archived.json()["is_active"] is False
+    assert (await client.get("/api/library/users")).json()["total"] == 0
+    archived_list = await client.get(
+        "/api/library/users", params={"status": "archived"}
+    )
+    assert archived_list.json()["total"] == 1
+    assert archived_list.json()["items"][0]["number"] == "LC-001"
+    history = await client.get("/api/library/users/LC-001/visits")
+    assert history.json()["total"] == 1
+
+    unavailable = await client.post(
+        "/api/library/attendance/manual", json={"user_number": "LC-001"}
+    )
+    assert unavailable.status_code == 404
+    restored = await client.patch(
+        "/api/library/users/LC-001/archive", json={"archived": False}
+    )
+    assert restored.status_code == 200
+    assert restored.json()["is_active"] is True
+    assert (await client.get("/api/library/users")).json()["total"] == 1
+
+
+@pytest.mark.asyncio
 async def test_guest_qr_check_in_is_persisted(client, api_db):
     _, token = await get_or_create_daily_session(api_db)
     response = await client.post(

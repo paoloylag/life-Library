@@ -125,6 +125,10 @@ class LibraryUserInput(BaseModel):
     is_active: bool = True
 
 
+class LibraryUserArchiveInput(BaseModel):
+    archived: bool
+
+
 USER_CATEGORIES = {"student", "faculty", "non-teaching personnel", "administrator", "visitor"}
 
 
@@ -135,6 +139,16 @@ def is_generated_staff_number(number: str) -> bool:
 def safe_csv_value(value) -> str:
     text_value = "" if value is None else str(value)
     return "'" + text_value if text_value.startswith(("=", "+", "-", "@")) else text_value
+
+
+def user_status_filters(status: str):
+    if status == "active":
+        return [StudentProfile.is_active.is_(True), User.is_active.is_(True)]
+    if status == "archived":
+        return [or_(StudentProfile.is_active.is_(False), User.is_active.is_(False))]
+    if status == "all":
+        return []
+    raise HTTPException(422, "Status must be active, archived, or all")
 
 
 def clean_user_input(body: LibraryUserInput):
@@ -654,12 +668,13 @@ async def record_guest(token: str, body: GuestCheckIn, db=Depends(get_db)):
 async def library_users(
     q: str = "",
     user_type: str = "",
+    status: str = "active",
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
-    filters = []
+    filters = user_status_filters(status)
     if q.strip():
         term = f"%{q.strip()}%"
         filters.append(
@@ -723,10 +738,11 @@ async def library_users(
 async def export_library_users_csv(
     q: str = "",
     user_type: str = "",
+    status: str = "active",
     librarian=Depends(current_librarian),
     db=Depends(get_db),
 ):
-    filters = []
+    filters = user_status_filters(status)
     if q.strip():
         term = f"%{q.strip()}%"
         filters.append(
@@ -927,6 +943,27 @@ async def update_library_user(
     except IntegrityError:
         await db.rollback()
         raise HTTPException(409, "Email address or user number already exists")
+    return profile_json(profile)
+
+
+@app.patch("/api/library/users/{number}/archive")
+async def archive_library_user(
+    number: str,
+    body: LibraryUserArchiveInput,
+    librarian=Depends(librarian_admin),
+    db=Depends(get_db),
+):
+    profile = await db.scalar(
+        select(StudentProfile)
+        .where(StudentProfile.student_number == number)
+        .options(selectinload(StudentProfile.user))
+    )
+    if not profile:
+        raise HTTPException(404, "Library user not found")
+    active = not body.archived
+    profile.is_active = active
+    profile.user.is_active = active
+    await db.commit()
     return profile_json(profile)
 
 
