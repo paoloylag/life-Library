@@ -8,7 +8,7 @@ const empty: UserFields = {number:'', name:'', email:'', user_type:'student', pr
 const categories = [['student','Student'], ['faculty','Faculty / Teaching Personnel'], ['non-teaching personnel','Non-Teaching Personnel'], ['administrator','Administrator'], ['visitor','Visitor']]
 
 export default function UserEditor({user,onClose,onSaved}:{user:ApiUser|null;onClose:()=>void;onSaved:()=>void}){
- const [fields,setFields]=React.useState<UserFields>(user ? {...empty,...user,number:user.display_number??user.number} : empty)
+ const [fields,setFields]=React.useState<UserFields>(user ? {...empty,...user,number:user.display_number??user.number,program:user.user_type==='student'?(user.program||'BS-ENTREP'):user.program} : empty)
  const [options,setOptions]=React.useState(()=>({programs:defaultSettings.programs,yearLevels:defaultSettings.yearLevels,sections:defaultSettings.sections,departments:defaultSettings.departments}))
  const [saving,setSaving]=React.useState(false)
  const [error,setError]=React.useState('')

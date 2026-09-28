@@ -375,6 +375,8 @@ async def callback(request: Request, db=Depends(get_db)):
         elif directory_identity:
             profile.user_type = directory_identity.user_type
             user.role = directory_identity.user_type
+        if profile.user_type == "student" and not profile.program:
+            profile.program = DEFAULT_STUDENT_PROGRAM
         await db.commit()
         await db.refresh(user)
     except HTTPException as exc:
