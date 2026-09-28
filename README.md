@@ -2,15 +2,18 @@
 
 Independent FastAPI + React implementation. The `lifetrack-l12` repository is reference-only.
 
-**Live site:** [Life College Library Attendance](https://paoloylag.github.io/life-Library/)
+**Production site:** [Life College Library Attendance](https://library.life.edu.ph/)
+
+**GitHub Pages preview:** [Life College Library Attendance](https://paoloylag.github.io/life-Library/)
 
 See [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) for the product scope, architecture, implementation status, routes, deployment model, and MVP priorities.
 
 Production database launch and recovery steps are documented in
 [docs/PRODUCTION_DATABASE_RUNBOOK.md](docs/PRODUCTION_DATABASE_RUNBOOK.md).
 
-The reviewed AWS architecture, CloudFormation stack, and staging deployment
-sequence are documented in [infra/aws/README.md](infra/aws/README.md).
+The reviewed AWS architecture and CloudFormation stack are documented in
+[infra/aws/README.md](infra/aws/README.md). The former AWS staging environment
+was permanently decommissioned on September 28, 2026.
 
 All implemented backend routes, request fields, permissions, and local test URLs
 are documented in [docs/API_REFERENCE.md](docs/API_REFERENCE.md).

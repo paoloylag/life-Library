@@ -120,18 +120,19 @@ the JSON into memory and the secret ARN takes precedence over a configured file.
 The ARN must be requested in its own AWS region (`ap-southeast-1` for the
 current secret). The backend image has been built, smoke-tested, and pushed to
 ECR as `165115313524.dkr.ecr.ap-southeast-1.amazonaws.com/life-library-backend:secrets-manager-20260918`.
-The AWS staging environment is running at
-`https://library-staging.life.edu.ph`. It uses CloudFront, a private S3 origin,
-an ALB-backed ECS Fargate service, and a private encrypted RDS PostgreSQL 16.15
-database. The staging schema is verified at migration head `c31a9e4d27f8`.
+The former AWS staging environment at `https://library-staging.life.edu.ph`
+was permanently decommissioned on September 28, 2026. Its CloudFormation stack,
+RDS instance and final snapshot, and retained frontend bucket were deleted. The
+staging deployment workflow was removed to prevent accidental recreation.
 
 The production database launch and restore process is documented in
 `docs/PRODUCTION_DATABASE_RUNBOOK.md`. AWS access has been verified through the
 `life-library` IAM Identity Center profile. The shared CloudFront certificate
 for `library.life.edu.ph` and `library-staging.life.edu.ph` is issued. The
-validated CloudFormation definition is in `infra/aws/app-stack.yaml`; managed
-staging resources reuse the existing Life Portal staging VPC and NAT egress.
-The production stack has not been deployed.
+validated CloudFormation definition is in `infra/aws/app-stack.yaml`.
+Production is deployed independently at `https://library.life.edu.ph`; shared
+networking, DNS, certificate, ECR, and Google credential resources were not
+changed during the staging teardown.
 
 ## Secrets
 
