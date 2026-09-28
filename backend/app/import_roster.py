@@ -68,6 +68,7 @@ STAFF_COLUMN_ALIASES = {
     "contact_number": {"contact_no.", "contact_no", "contact_number", "phone"},
 }
 STAFF_TYPES = {"faculty", "non-teaching personnel", "administrator"}
+DEFAULT_STUDENT_PROGRAM = "BS-ENTREP"
 
 
 def generated_staff_number(name: str, department: str) -> str:
@@ -301,7 +302,10 @@ async def import_rows(rows: list[dict], dry_run: bool = False) -> ImportResult:
                 "regularization_date",
                 "contact_number",
             ):
-                setattr(profile, field, row.get(field) or None)
+                value = row.get(field) or None
+                if field == "program" and row["user_type"] == "student":
+                    value = value or profile.program or DEFAULT_STUDENT_PROGRAM
+                setattr(profile, field, value)
             await db.flush()
         if dry_run:
             await db.rollback()

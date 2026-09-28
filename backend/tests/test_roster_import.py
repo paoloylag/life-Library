@@ -56,6 +56,44 @@ def test_roster_text_parsing():
     assert rows[0]["section"] == "B"
 
 
+@pytest.mark.asyncio
+async def test_student_csv_bulk_edit_defaults_program_and_updates_year_section(monkeypatch):
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    monkeypatch.setattr("app.import_roster.SessionLocal", factory)
+
+    header = "number,name,email,user_type,program,year_level,section\n"
+    initial = read_roster_text(
+        header
+        + "ST-1,Student One,one@life.edu.ph,student,,1st Year,1A\n"
+        + "ST-2,Student Two,two@life.edu.ph,student,BS-ENTREP-FE,1st Year,1B\n"
+    )
+    created = await import_rows(initial)
+    assert created.created == 2
+
+    edited = read_roster_text(
+        header
+        + "ST-1,Student One,one@life.edu.ph,student,,2nd Year,2A\n"
+        + "ST-2,Student Two,two@life.edu.ph,student,,2nd Year,2B\n"
+    )
+    updated = await import_rows(edited)
+    assert updated.updated == 2
+    async with factory() as db:
+        profiles = {
+            profile.student_number: profile
+            for profile in (await db.scalars(select(StudentProfile))).all()
+        }
+        assert (profiles["ST-1"].program, profiles["ST-1"].year_level, profiles["ST-1"].section) == (
+            "BS-ENTREP", "2nd Year", "2A"
+        )
+        assert (profiles["ST-2"].program, profiles["ST-2"].year_level, profiles["ST-2"].section) == (
+            "BS-ENTREP-FE", "2nd Year", "2B"
+        )
+    await engine.dispose()
+
+
 def test_staff_masterlist_aliases_and_category():
     rows, ignored = read_staff_text(
         "Employee ID,Lsst Name,First Name,Preferred Name,Employment Status,"

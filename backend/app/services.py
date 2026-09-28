@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.config import settings
 from app.library_settings import read_library_settings
@@ -150,10 +150,28 @@ async def valid_session_for_token(db, token: str, now: datetime | None = None):
 async def create_visitor_profile(db, name: str, organization: str | None = None):
     import secrets
 
+    normalized_name = name.strip()
+    internal_profile = await db.scalar(
+        select(StudentProfile)
+        .join(User)
+        .where(
+            func.lower(func.trim(User.name)) == normalized_name.lower(),
+            StudentProfile.user_type != "visitor",
+            StudentProfile.is_active.is_(True),
+            User.is_active.is_(True),
+        )
+    )
+    if internal_profile:
+        raise HTTPException(
+            409,
+            "A Life College account already exists for this name. "
+            "Use Continue with Google to check in.",
+        )
+
     code = f"VIS-{attendance_day().year}-{secrets.token_hex(3).upper()}"
     user = User(
         email=f"{code.lower()}@visitor.local",
-        name=name.strip(),
+        name=normalized_name,
         role="visitor",
         is_active=True,
     )

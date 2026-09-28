@@ -31,7 +31,12 @@ from app.config import settings
 from app.database import SessionLocal, get_db, init_database
 from app.dev_librarians import DEV_ACCOUNTS, dev_accounts_enabled, seed_dev_librarians
 from app.google_directory import lookup_directory_identity
-from app.import_roster import import_rows, read_roster_text, read_staff_text
+from app.import_roster import (
+    DEFAULT_STUDENT_PROGRAM,
+    import_rows,
+    read_roster_text,
+    read_staff_text,
+)
 from app.library_settings import (
     LibrarySettings,
     read_library_settings,
@@ -135,6 +140,8 @@ def safe_csv_value(value) -> str:
 def clean_user_input(body: LibraryUserInput):
     values = {key: value.strip() if isinstance(value, str) else value for key, value in body.model_dump().items()}
     values["email"] = values["email"].lower()
+    if values["user_type"] == "student" and not values["program"]:
+        values["program"] = DEFAULT_STUDENT_PROGRAM
     if not values["number"] or len(values["name"]) < 2 or values["user_type"] not in USER_CATEGORIES:
         raise HTTPException(422, "Enter a valid number, name, and user category")
     if values["user_type"] == "student" and ("@" not in values["email"] or values["email"].endswith("@visitor.local")):
@@ -359,7 +366,7 @@ async def callback(request: Request, db=Depends(get_db)):
                 user_id=user.id,
                 student_number=email.split("@", 1)[0].upper(),
                 user_type=resolved_user_type,
-                program=None,
+                program=DEFAULT_STUDENT_PROGRAM if resolved_user_type == "student" else None,
                 section=None,
                 is_active=True,
             )

@@ -161,6 +161,14 @@ CSV imports use the columns shown in `docs/roster-template.csv`, accept files up
 to 5 MB, and reconcile existing SSO profiles by email before creating users.
 Google-managed identity and category values are preserved while program, year
 level, section, department, organization, and active status are updated.
+For a student-only file, use `docs/student-roster-template.csv` or download the
+student template from **Data actions**. Set `user_type` to `student` in each row.
+The `year_level` and `section` columns are imported separately. A blank
+`program` becomes `BS-ENTREP` for a new student and preserves an existing
+student's program during an update. Re-uploading
+rows through **Bulk Update** updates existing profiles matched by number or
+email. Include the complete values for each row: blank optional cells in a
+bulk update replace existing values with blanks.
 
 The directory's **Import staff masterlist** action accepts CSV headers from the
 AY 26-27 employee masterlist: `Employee ID`, `Lsst Name` (or `Last Name`),

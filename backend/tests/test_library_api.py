@@ -5,12 +5,21 @@ import pytest
 from app.config import settings
 from app.auth import hash_password
 from app.database import Base, get_db
-from app.main import app
+from app.main import LibraryUserInput, app, clean_user_input
 from app.models import Librarian, StudentProfile, User
 from app.services import get_or_create_daily_session
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+
+def test_manual_student_defaults_to_bs_entrep():
+    values = clean_user_input(
+        LibraryUserInput(
+            number="ST-1", name="Student One", email="one@life.edu.ph", user_type="student"
+        )
+    )
+    assert values["program"] == "BS-ENTREP"
 
 
 @pytest.mark.asyncio
@@ -134,3 +143,43 @@ async def test_guest_qr_check_in_is_persisted(client, api_db):
     assert history.status_code == 200
     assert history.json()["items"][0]["source"] == "guest"
     assert history.json()["items"][0]["purpose"] == "Research"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["Paolo Miguel Ylag", "Helen Alod"])
+async def test_guest_check_in_rejects_existing_internal_user(client, api_db, name):
+    user = User(
+        email=name.lower().replace(" ", ".") + "@life.edu.ph",
+        name=name,
+        role="non-teaching personnel",
+        is_active=True,
+    )
+    api_db.add(user)
+    await api_db.flush()
+    api_db.add(
+        StudentProfile(
+            user_id=user.id,
+            student_number=name.upper().replace(" ", "-"),
+            user_type="non-teaching personnel",
+            department="Administration",
+            is_active=True,
+        )
+    )
+    await api_db.commit()
+    _, token = await get_or_create_daily_session(api_db)
+
+    response = await client.post(
+        f"/api/library/scan/{token}/guest",
+        json={"name": name.lower(), "organization": "Life College", "purpose": "Work"},
+    )
+
+    assert response.status_code == 409
+    assert "Continue with Google" in response.json()["detail"]
+    profiles = (
+        await api_db.scalars(
+            select(StudentProfile)
+            .join(User)
+            .where(func.lower(User.name) == name.lower())
+        )
+    ).all()
+    assert len(profiles) == 1
