@@ -34,6 +34,11 @@ async def test_staff_account_creation_and_role_boundaries(auth_context):
     await client.post("/api/admin/logout")
 
     await login(client, "librarian")
+    display = await client.post("/api/admin/accounts", json={
+        **body, "email": "display@life.edu.ph", "role": "qr_display"
+    })
+    assert display.status_code == 201, display.text
+    assert display.json()["role"] == "qr_display"
     head = await client.post("/api/admin/accounts", json={**body, "email": "second-librarian@life.edu.ph", "role": "librarian"})
     assert head.status_code == 201, head.text
     assert (await client.get("/api/admin/accounts")).json()["items"]

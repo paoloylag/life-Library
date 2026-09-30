@@ -8,7 +8,7 @@ This document lists the HTTP endpoints implemented by the FastAPI backend.
 - Local Swagger UI: `http://127.0.0.1:8000/docs`
 - Local ReDoc: `http://127.0.0.1:8000/redoc`
 - Local OpenAPI schema: `http://127.0.0.1:8000/openapi.json`
-- Production API: pending deployment
+- Production API: `https://library.life.edu.ph`
 
 All application endpoints begin with `/api`. Browser requests must include
 credentials because user and librarian authentication use HTTP-only cookies.
@@ -19,7 +19,8 @@ credentials because user and librarian authentication use HTTP-only cookies.
 | --- | --- |
 | Public | No authenticated session required |
 | QR user | Google-authenticated library user session required |
-| Staff | Any signed-in Librarian, Librarian Associate, or Auditor |
+| Staff | Signed-in Librarian, Librarian Associate, or Auditor with dashboard access |
+| QR display | QR Display role; active daily QR read access only |
 | Editor | Librarian or Librarian Associate |
 | Librarian | Librarian role only |
 | Local only | Available only when `APP_ENV=local` and `ENABLE_DEV_LIBRARIANS=true` |
@@ -68,8 +69,10 @@ Create body:
 }
 ```
 
-Valid roles are `librarian`, `librarian_associate`, and `auditor`. Only a
-Librarian can assign or manage the `librarian` role.
+Valid roles are `librarian`, `librarian_associate`, `auditor`, and `qr_display`.
+Only a Librarian can assign or manage the `librarian` role. A QR Display account
+is redirected to the entrance display and cannot access dashboard data or
+administrative APIs.
 
 Update body:
 
@@ -84,7 +87,7 @@ Update body:
 
 | Method | Local URL | Access | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `http://127.0.0.1:8000/api/library/sessions/current` | Editor | Get or create today's session and return its scan URL |
+| `GET` | `http://127.0.0.1:8000/api/library/sessions/current` | Editor or QR display | Get or create today's session and return its scan URL |
 | `POST` | `http://127.0.0.1:8000/api/library/sessions` | Editor | Get or create today's QR session |
 | `POST` | `http://127.0.0.1:8000/api/library/scan/{token}` | QR user | Record the authenticated user's check-in |
 | `POST` | `http://127.0.0.1:8000/api/library/scan/{token}/guest` | Public | Record a guest check-in against a valid QR token |

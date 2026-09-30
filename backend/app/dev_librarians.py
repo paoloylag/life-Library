@@ -12,6 +12,7 @@ DEV_ACCOUNTS = [
         ("librarian", "Development Librarian"),
         ("librarian_associate", "Development Librarian Associate"),
         ("auditor", "Development Auditor"),
+        ("qr_display", "Development QR Display"),
     )
 ]
 

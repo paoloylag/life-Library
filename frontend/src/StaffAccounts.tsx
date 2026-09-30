@@ -12,7 +12,7 @@ export default function StaffAccounts({current}:{current:LibrarianSession}){
  const[error,setError]=React.useState('')
  const[editing,setEditing]=React.useState<Staff|null|undefined>(undefined)
  const[busy,setBusy]=React.useState(false)
- const roles:Role[]=current.role==='librarian'?['librarian','librarian_associate','auditor']:['librarian_associate','auditor']
+ const roles:Role[]=current.role==='librarian'?['librarian','librarian_associate','auditor','qr_display']:['librarian_associate','auditor','qr_display']
  const load=React.useCallback(()=>apiRequest<{items:Staff[]}>('/api/admin/accounts').then(result=>{setAccounts(result.items);setError('')}).catch(reason=>setError(reason.message)),[])
  React.useEffect(()=>{void load()},[load])
  return <div className="module-stack staff-page">

@@ -67,7 +67,9 @@ async def current_librarian(request: Request, db: Annotated[AsyncSession, Depend
     )
     if not librarian:
         raise HTTPException(401, "Librarian account unavailable")
-    if librarian.role not in ("librarian", "librarian_associate", "auditor"):
+    if librarian.role not in (
+        "librarian", "librarian_associate", "auditor", "qr_display"
+    ):
         raise HTTPException(403, "Unknown librarian role")
     if librarian.is_development and not (
         settings.app_env == "local" and settings.enable_dev_librarians
@@ -85,4 +87,20 @@ async def librarian_editor(librarian: Annotated[Librarian, Depends(current_libra
 async def librarian_admin(librarian: Annotated[Librarian, Depends(current_librarian)]):
     if librarian.role != "librarian":
         raise HTTPException(403, "Librarian permission required")
+    return librarian
+
+
+async def librarian_dashboard(
+    librarian: Annotated[Librarian, Depends(current_librarian)],
+):
+    if librarian.role == "qr_display":
+        raise HTTPException(403, "Dashboard permission required")
+    return librarian
+
+
+async def qr_display_reader(
+    librarian: Annotated[Librarian, Depends(current_librarian)],
+):
+    if librarian.role not in ("librarian", "librarian_associate", "qr_display"):
+        raise HTTPException(403, "QR display permission required")
     return librarian

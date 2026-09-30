@@ -24,7 +24,9 @@ from app.auth import (
     issue_librarian,
     issue_student,
     librarian_admin,
+    librarian_dashboard,
     librarian_editor,
+    qr_display_reader,
     verify_password,
 )
 from app.config import settings
@@ -547,7 +549,9 @@ async def create_staff_account(
             any(char.isspace() for char in email) or
             not all(email.split("@"))):
         raise HTTPException(422, "Enter a valid name and email address")
-    if body.role not in ("librarian", "librarian_associate", "auditor"):
+    if body.role not in (
+        "librarian", "librarian_associate", "auditor", "qr_display"
+    ):
         raise HTTPException(422, "Invalid staff role")
     if body.role == "librarian" and librarian.role != "librarian":
         raise HTTPException(403, "Only a librarian may assign the librarian role")
@@ -574,7 +578,9 @@ async def update_staff_account(
         raise HTTPException(404, "Staff account not found")
     if row.is_development:
         raise HTTPException(409, "Development test accounts cannot be edited")
-    if body.role not in ("librarian", "librarian_associate", "auditor"):
+    if body.role not in (
+        "librarian", "librarian_associate", "auditor", "qr_display"
+    ):
         raise HTTPException(422, "Invalid staff role")
     if librarian.role != "librarian" and (row.role == "librarian" or body.role == "librarian"):
         raise HTTPException(403, "Only a librarian may manage librarian accounts")
@@ -607,7 +613,7 @@ async def admin_logout():
 
 @app.get("/api/library/sessions/current")
 async def current_session(
-    request: Request, librarian=Depends(librarian_editor), db=Depends(get_db),
+    request: Request, librarian=Depends(qr_display_reader), db=Depends(get_db),
 ):
     row, raw = await get_or_create_daily_session(db)
     return {
@@ -671,7 +677,7 @@ async def library_users(
     status: str = "active",
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    librarian=Depends(current_librarian),
+    librarian=Depends(librarian_dashboard),
     db=Depends(get_db),
 ):
     filters = user_status_filters(status)
@@ -739,7 +745,7 @@ async def export_library_users_csv(
     q: str = "",
     user_type: str = "",
     status: str = "active",
-    librarian=Depends(current_librarian),
+    librarian=Depends(librarian_dashboard),
     db=Depends(get_db),
 ):
     filters = user_status_filters(status)
@@ -969,7 +975,7 @@ async def archive_library_user(
 
 @app.get("/api/library/users/{number}")
 async def library_user(
-    number: str, librarian=Depends(current_librarian), db=Depends(get_db)
+    number: str, librarian=Depends(librarian_dashboard), db=Depends(get_db)
 ):
     profile = await db.scalar(
         select(StudentProfile)
@@ -990,7 +996,7 @@ async def library_user(
 
 @app.get("/api/library/users/{number}/visits")
 async def library_user_visits(
-    number: str, librarian=Depends(current_librarian), db=Depends(get_db)
+    number: str, librarian=Depends(librarian_dashboard), db=Depends(get_db)
 ):
     profile = await db.scalar(
         select(StudentProfile).where(StudentProfile.student_number == number)
@@ -1017,7 +1023,7 @@ async def attendance(
     user_type: str = "",
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=500),
-    librarian=Depends(current_librarian),
+    librarian=Depends(librarian_dashboard),
     db=Depends(get_db),
 ):
     filters = []
@@ -1110,7 +1116,7 @@ async def manual_check_in(
 
 
 @app.get("/api/library/dashboard")
-async def dashboard(librarian=Depends(current_librarian), db=Depends(get_db)):
+async def dashboard(librarian=Depends(librarian_dashboard), db=Depends(get_db)):
     starts_at, expires_at = utc_bounds(attendance_day())
     rows = (
         await db.scalars(
@@ -1160,7 +1166,7 @@ def report_filters(
 @app.get("/api/library/reports")
 async def library_report(
     filters: ReportFilters = Depends(report_filters),
-    librarian=Depends(current_librarian),
+    librarian=Depends(librarian_dashboard),
     db=Depends(get_db),
 ):
     return await build_report(db, filters)
@@ -1169,7 +1175,7 @@ async def library_report(
 @app.get("/api/library/reports/export.xlsx")
 async def library_report_excel(
     filters: ReportFilters = Depends(report_filters),
-    librarian=Depends(current_librarian),
+    librarian=Depends(librarian_dashboard),
     db=Depends(get_db),
 ):
     report = await build_report(db, filters)
@@ -1183,7 +1189,7 @@ async def library_report_excel(
 @app.get("/api/library/reports/export.pdf")
 async def library_report_pdf(
     filters: ReportFilters = Depends(report_filters),
-    librarian=Depends(current_librarian),
+    librarian=Depends(librarian_dashboard),
     db=Depends(get_db),
 ):
     report = await build_report(db, filters)

@@ -171,7 +171,7 @@ GitHub Pages must use **GitHub Actions** as its Pages source. It does not host F
 | Student visit pages | Implemented with seeded data |
 | Reports, charts, Excel, and PDF | Integrated with FastAPI data and exports |
 | Persistent PostgreSQL attendance | Dashboard, Attendance, and Library Users integrated |
-| Librarian login screen/session enforcement | Implemented with librarian, librarian associate, and auditor roles |
+| Librarian login screen/session enforcement | Implemented with librarian, librarian associate, auditor, and QR Display roles |
 | Google SSO check-in | Frontend and backend integrated; credentials, roster profiles, and backend deployment pending |
 | Automatic daily QR rotation | Implemented in frontend; rotates at local midnight |
 | Production QR token validation | Backend-issued token used by authenticated and guest check-ins |

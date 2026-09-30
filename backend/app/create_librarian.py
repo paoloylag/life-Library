@@ -16,7 +16,7 @@ def arguments():
     parser.add_argument("--email")
     parser.add_argument("--name")
     parser.add_argument(
-        "--role", choices=("librarian", "librarian_associate", "auditor")
+        "--role", choices=("librarian", "librarian_associate", "auditor", "qr_display")
     )
     parser.add_argument(
         "--password-env",
@@ -28,7 +28,7 @@ def arguments():
 
 async def create_account(email: str, name: str, role: str, password: str):
     email, name, role = email.strip().lower(), name.strip(), role.strip().lower()
-    if role not in ("librarian", "librarian_associate", "auditor"):
+    if role not in ("librarian", "librarian_associate", "auditor", "qr_display"):
         raise SystemExit("Invalid role.")
     if len(name) < 2 or email.count("@") != 1 or any(char.isspace() for char in email):
         raise SystemExit("Enter a valid name and email address.")
@@ -55,7 +55,7 @@ async def main():
     name = args.name or input("Name: ")
     role = (
         args.role
-        or input("Role [librarian/librarian_associate/auditor] (librarian_associate): ")
+        or input("Role [librarian/librarian_associate/auditor/qr_display] (librarian_associate): ")
         .strip()
         .lower()
         or "librarian_associate"

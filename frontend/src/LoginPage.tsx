@@ -2,8 +2,8 @@ import React from 'react'
 import {BookOpen, LogIn} from 'lucide-react'
 import {apiRequest} from './api'
 
-export type LibrarianSession={id:number;name:string;email:string;role:'librarian'|'librarian_associate'|'auditor'}
-export const staffRoleName=(role:LibrarianSession['role'])=>({librarian:'Librarian',librarian_associate:'Librarian Associate',auditor:'Auditor'})[role]
+export type LibrarianSession={id:number;name:string;email:string;role:'librarian'|'librarian_associate'|'auditor'|'qr_display'}
+export const staffRoleName=(role:LibrarianSession['role'])=>({librarian:'Librarian',librarian_associate:'Librarian Associate',auditor:'Auditor',qr_display:'QR Display'})[role]
 type DevAccount={role:string;name:string;email:string;password:string}
 
 function DevLoginAs({onSelect}:{onSelect:(account:DevAccount)=>void}){

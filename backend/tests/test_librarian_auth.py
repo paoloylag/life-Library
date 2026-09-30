@@ -103,12 +103,35 @@ async def test_librarian_roles_authorize_reads_and_mutations(auth_context):
 
 
 @pytest.mark.asyncio
+async def test_qr_display_role_can_only_read_the_active_qr(auth_context):
+    client, db = auth_context
+    await add_librarian(db, "qr_display")
+    await login(client, "qr_display")
+
+    assert (await client.get("/api/admin/me")).json()["role"] == "qr_display"
+    assert (await client.get("/api/library/sessions/current")).status_code == 200
+    for path in (
+        "/api/library/dashboard",
+        "/api/library/users",
+        "/api/library/attendance",
+        "/api/library/reports",
+        "/api/library/settings",
+        "/api/admin/accounts",
+    ):
+        assert (await client.get(path)).status_code == 403, path
+    assert (await client.post("/api/library/sessions")).status_code == 403
+    assert (await client.post("/api/library/attendance/manual", json={})).status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_local_dev_accounts_are_opt_in_and_blocked_in_production(auth_context, monkeypatch):
     client, db = auth_context
     monkeypatch.setattr(settings, "enable_dev_librarians", True)
     await seed_dev_librarians(db)
     accounts = (await client.get("/api/admin/dev-accounts")).json()["accounts"]
-    assert {account["role"] for account in accounts} == {"librarian", "librarian_associate", "auditor"}
+    assert {account["role"] for account in accounts} == {
+        "librarian", "librarian_associate", "auditor", "qr_display"
+    }
     librarian = next(account for account in accounts if account["role"] == "librarian")
     assert (await client.post("/api/admin/login", json=librarian)).status_code == 204
     assert (await client.get("/api/admin/me")).status_code == 200

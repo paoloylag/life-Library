@@ -145,6 +145,8 @@ function App() {
   if (path.startsWith("/scan/")) return <ScanPage />;
   if (authLoading) return <main className="librarian-login"><p role="status">Checking librarian session...</p></main>;
   if (!librarian) return <LoginPage onLogin={setLibrarian} />;
+  if (librarian.role === "qr_display")
+    return <QrDisplay close={logout} closeLabel="Sign out" />;
   if (path === "/qr-display")
     return librarian.role === "auditor" ? <main className="librarian-login"><p>QR display requires librarian access.</p><button onClick={() => navigate("/")}>Dashboard</button></main> : <QrDisplay close={() => navigate("/")} />;
   const title =
@@ -589,7 +591,7 @@ function Dashboard({editable}:{editable:boolean}) {
     </div>
   );
 }
-function QrDisplay({ close }: { close: () => void }) {
+function QrDisplay({ close, closeLabel = "Back to dashboard" }: { close: () => void; closeLabel?: string }) {
   const [settings, setSettings] = React.useState(defaultSettings);
   const { url } = useDailyQr();
   React.useEffect(() => {
@@ -628,7 +630,7 @@ function QrDisplay({ close }: { close: () => void }) {
             <span>{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</span>
           </button>
           <button className="display-action" onClick={close}>
-            Back to dashboard
+            {closeLabel}
           </button>
         </div>
       </header>

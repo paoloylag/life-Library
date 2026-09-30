@@ -90,6 +90,9 @@ Last verified: September 19, 2026
   Librarian Associate may manage QR display and manual check-ins. Auditor may
   view dashboard, users, attendance,
   and reports but cannot retrieve the daily QR URL or change attendance.
+- QR Display accounts open only the entrance QR display. The backend permits
+  them to read the active daily QR session but rejects dashboard, attendance,
+  user, report, settings, session-creation, and staff-account APIs.
 - Alembic migration `b4d718c70aa1` maps former Administrator accounts to
   Librarian and former Librarian accounts to Librarian Associate, preserving
   their access. The isolated local demo database has been migrated and backed up.
@@ -103,7 +106,7 @@ Last verified: September 19, 2026
 - The development role switch is also available from the signed-in account
   menu when the same local opt-in is enabled. Production builds omit it.
 - Librarians and Librarian Associates can create staff accounts and assign
-  associate or auditor roles from Staff Accounts. Only Librarians can create or
+  associate, auditor, or QR Display roles from Staff Accounts. Only Librarians can create or
   manage Librarian accounts. Staff can change eligible roles and active status;
   nobody can remove their own access or edit development test accounts.
 
