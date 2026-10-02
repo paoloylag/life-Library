@@ -629,9 +629,11 @@ function QrDisplay({ close, closeLabel = "Back to dashboard" }: { close: () => v
             {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             <span>{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</span>
           </button>
-          <button className="display-action" onClick={close}>
-            {closeLabel}
-          </button>
+          {!isFullscreen && (
+            <button className="display-action" onClick={close}>
+              {closeLabel}
+            </button>
+          )}
         </div>
       </header>
       <section className={`display-card${settings.roomBookingUrl ? " with-booking" : ""}`}>
