@@ -106,9 +106,7 @@ def test_staff_masterlist_aliases_and_category():
     assert rows[0]["department"] == "Library"
     assert rows[0]["user_type"] == "faculty"
     assert rows[0]["preferred_name"] == "Lex"
-    assert rows[0]["employment_status"] == "Regular"
-    assert rows[0]["position"] == "Librarian"
-    assert ignored == ["Extra"]
+    assert ignored == ["Employment Status", "Position", "Extra"]
 
 
 def test_staff_masterlist_rejects_bad_rows():
@@ -133,7 +131,7 @@ def test_staff_masterlist_generates_missing_id_and_uses_explicit_type():
     )
     assert rows[0]["number"].startswith("STAFF-")
     assert rows[0]["user_type"] == "faculty"
-    assert ignored == []
+    assert ignored == ["Position"]
 
 
 def test_staff_masterlist_accepts_non_teaching_label():

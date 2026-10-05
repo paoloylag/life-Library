@@ -3,7 +3,7 @@ import io
 
 import pytest
 from app.config import settings
-from app.auth import hash_password
+from app.auth import hash_password, issue_student
 from app.database import Base, get_db
 from app.main import LibraryUserInput, app, clean_user_input
 from app.models import Librarian, StudentProfile, User
@@ -54,7 +54,13 @@ async def test_staff_csv_preview_and_import(client, api_db, monkeypatch):
     assert len(profiles) == 1
     assert profiles[0].user_type == "faculty"
     assert profiles[0].middle_name == "Lee"
-    assert profiles[0].regularization_date is None
+    assert applied.json()["ignored_columns"] == [
+        "Employment Status",
+        "Position",
+        "Immediate Supervisor",
+        "Date Hired",
+        "Regularization Date",
+    ]
     users = await client.get("/api/library/users")
     assert users.json()["items"][0]["display_number"] == ""
     exported = await client.get("/api/library/users/export.csv")
@@ -107,6 +113,35 @@ async def add_user(db):
     db.add(profile)
     await db.commit()
     return profile
+
+
+@pytest.mark.asyncio
+async def test_authenticated_profile_returns_saved_staff_department(client, api_db):
+    user = User(
+        email="staff@life.edu.ph",
+        name="Library Staff",
+        google_id="google-staff-1",
+        role="non-teaching personnel",
+        is_active=True,
+    )
+    api_db.add(user)
+    await api_db.flush()
+    api_db.add(
+        StudentProfile(
+            user_id=user.id,
+            student_number="STAFF-001",
+            user_type="non-teaching personnel",
+            department="Library Services",
+            is_active=True,
+        )
+    )
+    await api_db.commit()
+    client.cookies.set("library_session", issue_student(user.id))
+
+    response = await client.get("/api/auth/me")
+
+    assert response.status_code == 200
+    assert response.json()["profile"]["department"] == "Library Services"
 
 
 @pytest.mark.asyncio

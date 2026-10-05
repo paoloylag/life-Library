@@ -180,11 +180,10 @@ rows through **Bulk Update** updates existing profiles matched by number or
 email. Include the complete values for each row: blank optional cells in a
 bulk update replace existing values with blanks.
 
-The directory's **Import staff masterlist** action accepts CSV headers from the
-AY 26-27 employee masterlist: `Employee ID`, `Lsst Name` (or `Last Name`),
-`First Name`, `Middle Name`, `Preferred Name`, `Employment Status`, `Department`,
-`Position`, `Immediate Supervisor`, `Date Hired`, `Regularization Date`, and
-`Contact No.` A `User Type` column is required for every row, using `faculty`,
+The directory's **Import staff masterlist** action accepts these CSV headers:
+`Employee ID`, `Lsst Name` (or `Last Name`), `First Name`, `Middle Name`,
+`Preferred Name`, `Department`, and `Contact No.` A `User Type` column is
+required for every row, using `faculty`,
 `non-teaching personnel` (also accepts `Non-Teaching`), or `administrator`. Optional `Email` and `Status`
 columns are accepted. Missing emails are stored with an internal placeholder
 and can be added later. Missing or `NA` employee IDs remain blank in the

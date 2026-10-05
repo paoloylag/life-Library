@@ -2,7 +2,7 @@ export const API=(import.meta.env.VITE_API_URL||'').replace(/\/$/,'')
 
 export type ApiUser={
  number:string;display_number?:string;name:string;email:string;user_type:string;program:string;year_level:string;
- section:string;department:string;organization:string;preferred_name:string;employment_status:string;position:string;middle_name:string;immediate_supervisor:string;date_hired:string;regularization_date:string;contact_number:string;is_active:boolean;visit_count:number;last_visit:string|null
+ section:string;department:string;organization:string;preferred_name:string;middle_name:string;contact_number:string;is_active:boolean;visit_count:number;last_visit:string|null
  managed_by_google:boolean
 }
 export type ApiVisit={

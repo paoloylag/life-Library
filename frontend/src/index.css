@@ -304,6 +304,8 @@
 .module-stack > *,.module-stack .panel,.module-stack .table-wrap{min-width:0}
 .module-stack .table-wrap{overflow-x:auto}
 .directory-page > .panel{overflow:hidden}
+.directory-page>.panel.directory-list-panel{position:relative;z-index:2;overflow:visible}
+.directory-page>.staff-import-panel{position:relative;z-index:1}
 .directory-page .table-wrap{contain:layout paint}
 .staff-page .panel{overflow:hidden}
 .staff-page .table-wrap{contain:layout paint}

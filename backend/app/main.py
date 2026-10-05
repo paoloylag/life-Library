@@ -117,12 +117,7 @@ class LibraryUserInput(BaseModel):
     department: str = Field(default="", max_length=120)
     organization: str = Field(default="", max_length=180)
     preferred_name: str = Field(default="", max_length=120)
-    employment_status: str = Field(default="", max_length=80)
-    position: str = Field(default="", max_length=180)
     middle_name: str = Field(default="", max_length=120)
-    immediate_supervisor: str = Field(default="", max_length=180)
-    date_hired: str = Field(default="", max_length=80)
-    regularization_date: str = Field(default="", max_length=80)
     contact_number: str = Field(default="", max_length=80)
     is_active: bool = True
 
@@ -208,12 +203,7 @@ def profile_json(profile: StudentProfile, visit_count: int = 0, last_visit=None)
         "department": profile.department or "",
         "organization": profile.organization or "",
         "preferred_name": profile.preferred_name or "",
-        "employment_status": profile.employment_status or "",
-        "position": profile.position or "",
         "middle_name": profile.middle_name or "",
-        "immediate_supervisor": profile.immediate_supervisor or "",
-        "date_hired": profile.date_hired or "",
-        "regularization_date": profile.regularization_date or "",
         "contact_number": profile.contact_number or "",
         "is_active": profile.is_active and profile.user.is_active,
         "managed_by_google": bool(profile.user.google_id),
@@ -432,9 +422,9 @@ async def me(user=Depends(current_user)):
             "number": profile.student_number,
             "user_type": profile.user_type,
             "program": profile.program or "",
-            "year_level": "",
+            "year_level": profile.year_level or "",
             "section": profile.section or "",
-            "department": "",
+            "department": profile.department or "",
         },
     }
 
@@ -691,7 +681,6 @@ async def library_users(
                 StudentProfile.program.ilike(term),
                 StudentProfile.section.ilike(term),
                 StudentProfile.department.ilike(term),
-                StudentProfile.position.ilike(term),
                 StudentProfile.preferred_name.ilike(term),
             )
         )
@@ -759,7 +748,6 @@ async def export_library_users_csv(
                 StudentProfile.program.ilike(term),
                 StudentProfile.section.ilike(term),
                 StudentProfile.department.ilike(term),
-                StudentProfile.position.ilike(term),
                 StudentProfile.preferred_name.ilike(term),
             )
         )
@@ -789,12 +777,7 @@ async def export_library_users_csv(
             "department",
             "organization",
             "preferred_name",
-            "employment_status",
-            "position",
             "middle_name",
-            "immediate_supervisor",
-            "date_hired",
-            "regularization_date",
             "contact_number",
             "is_active",
         )
@@ -811,12 +794,7 @@ async def export_library_users_csv(
             profile.department,
             profile.organization,
             profile.preferred_name,
-            profile.employment_status,
-            profile.position,
             profile.middle_name,
-            profile.immediate_supervisor,
-            profile.date_hired,
-            profile.regularization_date,
             profile.contact_number,
             str(profile.is_active and profile.user.is_active).lower(),
         )
@@ -896,7 +874,7 @@ async def create_library_user(
     profile = StudentProfile(
         user_id=user.id, student_number=values["number"], user_type=values["user_type"],
         is_active=values["is_active"], **{key: values[key] or None for key in
-        ("program", "year_level", "section", "department", "organization", "preferred_name", "employment_status", "position", "middle_name", "immediate_supervisor", "date_hired", "regularization_date", "contact_number")}
+        ("program", "year_level", "section", "department", "organization", "preferred_name", "middle_name", "contact_number")}
     )
     db.add(profile)
     try:
@@ -942,7 +920,7 @@ async def update_library_user(
     profile.student_number = values["number"]
     profile.user_type = values["user_type"]
     profile.is_active = values["is_active"]
-    for key in ("program", "year_level", "section", "department", "organization", "preferred_name", "employment_status", "position", "middle_name", "immediate_supervisor", "date_hired", "regularization_date", "contact_number"):
+    for key in ("program", "year_level", "section", "department", "organization", "preferred_name", "middle_name", "contact_number"):
         setattr(profile, key, values[key] or None)
     try:
         await db.commit()

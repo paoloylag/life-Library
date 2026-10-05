@@ -32,12 +32,7 @@ FIELDS = (
     "department",
     "organization",
     "preferred_name",
-    "employment_status",
-    "position",
     "middle_name",
-    "immediate_supervisor",
-    "date_hired",
-    "regularization_date",
     "contact_number",
     "is_active",
 )
@@ -59,12 +54,7 @@ STAFF_COLUMN_ALIASES = {
     "user_type": {"user_type", "type", "staff_category", "category", "employee_type"},
     "is_active": {"is_active", "active", "status"},
     "preferred_name": {"preferred_name", "nickname"},
-    "employment_status": {"employment_status", "appointment_status"},
-    "position": {"position", "job_title", "title"},
     "middle_name": {"middle_name"},
-    "immediate_supervisor": {"immediate_supervisor", "supervisor"},
-    "date_hired": {"date_hired", "hire_date"},
-    "regularization_date": {"regularization_date"},
     "contact_number": {"contact_no.", "contact_no", "contact_number", "phone"},
 }
 STAFF_TYPES = {"faculty", "non-teaching personnel", "administrator"}
@@ -202,11 +192,6 @@ def read_staff_text(content: str) -> tuple[list[dict], list[str]]:
             for field in (
                 "middle_name",
                 "preferred_name",
-                "employment_status",
-                "position",
-                "immediate_supervisor",
-                "date_hired",
-                "regularization_date",
                 "contact_number",
             ):
                 if row.get(field, "").strip().lower() in {"na", "n/a"}:
@@ -294,12 +279,7 @@ async def import_rows(rows: list[dict], dry_run: bool = False) -> ImportResult:
                 "department",
                 "organization",
                 "preferred_name",
-                "employment_status",
-                "position",
                 "middle_name",
-                "immediate_supervisor",
-                "date_hired",
-                "regularization_date",
                 "contact_number",
             ):
                 value = row.get(field) or None
