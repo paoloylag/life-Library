@@ -549,3 +549,9 @@
   .manual-modal>footer{display:grid;grid-template-columns:1fr 1fr}
   .manual-modal>footer button{width:100%}
 }
+ .directory-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--line);margin-top:12px;font-size:13px;color:var(--muted)}
+ .directory-pagination label,.directory-pagination nav{display:flex;align-items:center;gap:10px}
+ .directory-pagination select{width:76px;min-height:36px}
+ .directory-pagination nav span{min-width:92px;text-align:center}
+ .directory-pagination button:disabled{opacity:.4;cursor:not-allowed}
+ @media(max-width:600px){.directory-pagination{gap:12px}.directory-pagination nav{width:100%;justify-content:flex-end}}

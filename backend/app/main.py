@@ -671,17 +671,18 @@ async def library_users(
     db=Depends(get_db),
 ):
     filters = user_status_filters(status)
-    if q.strip():
-        term = f"%{q.strip()}%"
+    for word in q.split():
+        escaped = word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        term = f"%{escaped}%"
         filters.append(
             or_(
-                User.name.ilike(term),
-                User.email.ilike(term),
-                StudentProfile.student_number.ilike(term),
-                StudentProfile.program.ilike(term),
-                StudentProfile.section.ilike(term),
-                StudentProfile.department.ilike(term),
-                StudentProfile.preferred_name.ilike(term),
+                User.name.ilike(term, escape="\\"),
+                User.email.ilike(term, escape="\\"),
+                StudentProfile.student_number.ilike(term, escape="\\"),
+                StudentProfile.program.ilike(term, escape="\\"),
+                StudentProfile.section.ilike(term, escape="\\"),
+                StudentProfile.department.ilike(term, escape="\\"),
+                StudentProfile.preferred_name.ilike(term, escape="\\"),
             )
         )
     if user_type.strip():
@@ -696,11 +697,13 @@ async def library_users(
             .join(User)
             .where(*filters)
             .options(selectinload(StudentProfile.user))
-            .order_by(User.name)
-            .offset((page - 1) * page_size)
-            .limit(page_size)
+            .order_by(User.name, StudentProfile.id)
         )
     ).all()
+    profiles = sorted(profiles, key=lambda profile: (
+        profile.user.name.split()[-1].casefold() if profile.user.name.split() else "",
+        profile.user.name.casefold(), profile.id,
+    ))[(page - 1) * page_size:page * page_size]
     summaries = {}
     if profiles:
         rows = (
@@ -738,17 +741,18 @@ async def export_library_users_csv(
     db=Depends(get_db),
 ):
     filters = user_status_filters(status)
-    if q.strip():
-        term = f"%{q.strip()}%"
+    for word in q.split():
+        escaped = word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        term = f"%{escaped}%"
         filters.append(
             or_(
-                User.name.ilike(term),
-                User.email.ilike(term),
-                StudentProfile.student_number.ilike(term),
-                StudentProfile.program.ilike(term),
-                StudentProfile.section.ilike(term),
-                StudentProfile.department.ilike(term),
-                StudentProfile.preferred_name.ilike(term),
+                User.name.ilike(term, escape="\\"),
+                User.email.ilike(term, escape="\\"),
+                StudentProfile.student_number.ilike(term, escape="\\"),
+                StudentProfile.program.ilike(term, escape="\\"),
+                StudentProfile.section.ilike(term, escape="\\"),
+                StudentProfile.department.ilike(term, escape="\\"),
+                StudentProfile.preferred_name.ilike(term, escape="\\"),
             )
         )
     if user_type.strip():

@@ -23,6 +23,41 @@ def test_manual_student_defaults_to_bs_entrep():
 
 
 @pytest.mark.asyncio
+async def test_search_nonadjacent_name_words(client, api_db):
+    for index, name in enumerate(["Paolo Miguel Ylag", "Paolo Santos", "Helen Ylag"]):
+        user = User(email=f"search{index}@life.edu.ph", name=name, role="student", is_active=True)
+        api_db.add(user)
+        await api_db.flush()
+        api_db.add(StudentProfile(user_id=user.id, student_number=f"SEARCH-{index}", user_type="student", is_active=True))
+    await api_db.commit()
+    for query in ["paolo ylag", "YLAG PAOLO", "  paolo   ylag  "]:
+        response = await client.get("/api/library/users", params={"q": query})
+        assert response.status_code == 200
+        assert [item["name"] for item in response.json()["items"]] == ["Paolo Miguel Ylag"]
+    exported = await client.get("/api/library/users/export.csv", params={"q": "paolo ylag"})
+    assert [row["name"] for row in csv.DictReader(io.StringIO(exported.text.lstrip("\ufeff")))] == ["Paolo Miguel Ylag"]
+
+
+@pytest.mark.asyncio
+async def test_users_paginate_after_surname_sort_and_export_all(client, api_db):
+    for index, name in enumerate(["Amy Zebra", "Zoe Alpha", "Ben Middle"]):
+        user = User(email=f"page{index}@life.edu.ph", name=name, role="student", is_active=True)
+        api_db.add(user)
+        await api_db.flush()
+        api_db.add(StudentProfile(user_id=user.id, student_number=f"PAGE-{index}", user_type="student", is_active=True))
+    await api_db.commit()
+    first = (await client.get("/api/library/users?page=1&page_size=2")).json()
+    second = (await client.get("/api/library/users?page=2&page_size=2")).json()
+    assert first["total"] == second["total"] == 3
+    assert [item["name"] for item in first["items"]] == ["Zoe Alpha", "Ben Middle"]
+    assert [item["name"] for item in second["items"]] == ["Amy Zebra"]
+    filtered = (await client.get("/api/library/users?q=Zebra&page_size=10")).json()
+    assert filtered["total"] == 1
+    exported = await client.get("/api/library/users/export.csv")
+    assert len(list(csv.DictReader(io.StringIO(exported.text.lstrip("\ufeff"))))) == 3
+
+
+@pytest.mark.asyncio
 async def test_staff_csv_preview_and_import(client, api_db, monkeypatch):
     monkeypatch.setattr(
         "app.import_roster.SessionLocal",
