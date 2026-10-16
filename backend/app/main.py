@@ -30,6 +30,7 @@ from app.auth import (
     verify_password,
 )
 from app.config import settings
+from app.alternate_emails import router as alternate_email_router, resolve_alternate_google_user
 from app.database import SessionLocal, get_db, init_database
 from app.dev_librarians import DEV_ACCOUNTS, dev_accounts_enabled, seed_dev_librarians
 from app.google_directory import lookup_directory_identity
@@ -234,6 +235,7 @@ def visit_json(visit: LibraryVisit):
 
 
 app = FastAPI(title="Library Attendance API")
+app.include_router(alternate_email_router)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
@@ -324,7 +326,6 @@ async def login(request: Request, next: str = "/"):
     return await oauth.google.authorize_redirect(
         request,
         settings.google_redirect_uri,
-        hd=settings.google_allowed_domain,
         prompt="select_account",
     )
 
@@ -339,50 +340,50 @@ async def callback(request: Request, db=Depends(get_db)):
         if not info.get("email_verified"):
             raise HTTPException(403, "Google email is not verified")
         if str(info.get("hd", "")).lower() != settings.google_allowed_domain.lower():
-            raise HTTPException(403, "Use your Life College Google account")
-
-        user = await db.scalar(
-            select(User).where(or_(User.google_id == info["sub"], User.email == email))
-        )
-        if user and user.google_id and user.google_id != info["sub"]:
-            raise HTTPException(409, "This email is linked to another Google account")
-        if not user:
-            user = User(
-                email=email,
-                name=info.get("name") or email,
-                google_id=info["sub"],
-                avatar_url=info.get("picture"),
-            )
-            db.add(user)
+            user = await resolve_alternate_google_user(db, info)
         else:
-            user.google_id = info["sub"]
-            user.name = info.get("name") or user.name
-            user.avatar_url = info.get("picture") or user.avatar_url
+            user = await db.scalar(
+                select(User).where(or_(User.google_id == info["sub"], User.email == email))
+            )
+            if user and user.google_id and user.google_id != info["sub"]:
+                raise HTTPException(409, "This email is linked to another Google account")
+            if not user:
+                user = User(
+                    email=email,
+                    name=info.get("name") or email,
+                    google_id=info["sub"],
+                    avatar_url=info.get("picture"),
+                )
+                db.add(user)
+            else:
+                user.google_id = info["sub"]
+                user.name = info.get("name") or user.name
+                user.avatar_url = info.get("picture") or user.avatar_url
 
-        await db.flush()
-        directory_identity = await asyncio.to_thread(lookup_directory_identity, email)
-        profile = await db.scalar(
-            select(StudentProfile).where(StudentProfile.user_id == user.id)
-        )
-        if not profile:
-            resolved_user_type = (
-                directory_identity.user_type if directory_identity else "student"
+            await db.flush()
+            directory_identity = await asyncio.to_thread(lookup_directory_identity, email)
+            profile = await db.scalar(
+                select(StudentProfile).where(StudentProfile.user_id == user.id)
             )
-            profile = StudentProfile(
-                user_id=user.id,
-                student_number=email.split("@", 1)[0].upper(),
-                user_type=resolved_user_type,
-                program=DEFAULT_STUDENT_PROGRAM if resolved_user_type == "student" else None,
-                section=None,
-                is_active=True,
-            )
-            db.add(profile)
-            user.role = resolved_user_type
-        elif directory_identity:
-            profile.user_type = directory_identity.user_type
-            user.role = directory_identity.user_type
-        if profile.user_type == "student" and not profile.program:
-            profile.program = DEFAULT_STUDENT_PROGRAM
+            if not profile:
+                resolved_user_type = (
+                    directory_identity.user_type if directory_identity else "student"
+                )
+                profile = StudentProfile(
+                    user_id=user.id,
+                    student_number=email.split("@", 1)[0].upper(),
+                    user_type=resolved_user_type,
+                    program=DEFAULT_STUDENT_PROGRAM if resolved_user_type == "student" else None,
+                    section=None,
+                    is_active=True,
+                )
+                db.add(profile)
+                user.role = resolved_user_type
+            elif directory_identity:
+                profile.user_type = directory_identity.user_type
+                user.role = directory_identity.user_type
+            if profile.user_type == "student" and not profile.program:
+                profile.program = DEFAULT_STUDENT_PROGRAM
         await db.commit()
         await db.refresh(user)
     except HTTPException as exc:

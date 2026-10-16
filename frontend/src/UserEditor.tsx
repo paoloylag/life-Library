@@ -1,5 +1,6 @@
 import React from 'react'
 import {X} from 'lucide-react'
+import AlternateGoogleEmails from './AlternateGoogleEmails'
 import {apiRequest, ApiUser} from './api'
 import {defaultSettings, getLibrarySettings} from './settings'
 
@@ -34,6 +35,7 @@ export default function UserEditor({user,onClose,onSaved}:{user:ApiUser|null;onC
     {fields.user_type==='student'?<><label>Degree program<select value={fields.program} required onChange={event=>set('program',event.target.value)}><option value="">Select degree program</option>{fields.program&&!options.programs.includes(fields.program)&&<option value={fields.program}>{fields.program} (imported)</option>}{options.programs.map(program=><option key={program}>{program}</option>)}</select></label><label>Year level<select value={fields.year_level} required onChange={event=>set('year_level',event.target.value)}><option value="">Select year level</option>{fields.year_level&&!options.yearLevels.includes(fields.year_level)&&<option value={fields.year_level}>{fields.year_level} (imported)</option>}{options.yearLevels.map(level=><option key={level}>{level}</option>)}</select></label><label>Section<select value={fields.section} required onChange={event=>set('section',event.target.value)}><option value="">Select section</option>{fields.section&&!options.sections.includes(fields.section)&&<option value={fields.section}>{fields.section} (imported)</option>}{options.sections.map(section=><option key={section}>{section}</option>)}</select></label></>:fields.user_type==='visitor'?input('organization','Organization'):<label>Department<select value={fields.department} required onChange={event=>set('department',event.target.value)}><option value="">Select department</option>{fields.department&&!options.departments.includes(fields.department)&&<option value={fields.department}>{fields.department} (imported)</option>}{options.departments.map(department=><option key={department}>{department}</option>)}</select></label>}
     {fields.user_type!=='student'&&fields.user_type!=='visitor'&&<>{input('middle_name','Middle name')}{input('preferred_name','Preferred name')}{input('contact_number','Contact number')}</>}
     <label className="user-active"><input type="checkbox" checked={fields.is_active} onChange={event=>set('is_active',event.target.checked)}/>Active</label>
+    {user&&<AlternateGoogleEmails number={user.number}/>}
     {error&&<p className="module-error wide" role="alert">{error}</p>}
    </div>
    <footer><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button type="submit" className="primary-button save-button" disabled={saving}>{saving?'Saving...':'Save user'}</button></footer>
