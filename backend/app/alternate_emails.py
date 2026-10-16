@@ -17,7 +17,7 @@ class ApprovedGoogleEmail(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     google_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    approved_by: Mapped[int] = mapped_column(ForeignKey("librarians.id"))
+    approved_by: Mapped[int | None] = mapped_column(ForeignKey("librarians.id"), nullable=True)
     approved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
