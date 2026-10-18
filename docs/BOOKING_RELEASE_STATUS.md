@@ -18,14 +18,20 @@ Prepared on October 18, 2026 (Asia/Manila).
 
 ## Required Before Rollout
 
-- Verify an available production RDS snapshot and record its identifier/time.
-- Record the currently deployed ECS task definition for rollback.
+- Backup and rollback preflight completed; details below.
 - Review/merge the release branch and run Deploy AWS production.
 - Complete live school Google sign-in and approved-alternate-email checks.
 - Confirm QR attendance still works; book, extend/end/cancel, inspect reports and roles.
 - Review the initial resource policies before students begin booking.
 
-AWS CLI SSO was expired during preparation. No production database, AWS
-configuration, frontend assets, or running production service was changed.
+## Production Preflight
+
+- AWS CLI authorization renewed for account `165115313524`, region `ap-southeast-1`.
+- Library database is available, with 14-day automated backups and deletion protection.
+- Rollback API task definition: `life-library-production-api:16` (one running task).
+- Pre-release snapshot verified available: `life-library-pre-bookings-20261018-923c7fb`.
+  Created October 18, 2026 at 4:18 PM Asia/Manila (08:18 UTC).
+- Production application code, schema, frontend assets, and service configuration
+  have not been changed. No other system was touched.
 
 See [Booking Module](BOOKING_MODULE.md) for restrictions and rollback guidance.
