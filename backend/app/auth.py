@@ -17,8 +17,8 @@ librarian_sessions = URLSafeTimedSerializer(settings.secret_key, salt="librarian
 passwords = PasswordHasher()
 
 
-def issue_student(user_id: int) -> str:
-    return student_sessions.dumps({"id": user_id})
+def issue_student(user_id: int, *, google_authenticated: bool = False) -> str:
+    return student_sessions.dumps({"id": user_id, "google_authenticated": google_authenticated})
 
 
 def issue_librarian(librarian_id: int) -> str:

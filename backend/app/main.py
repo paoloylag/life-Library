@@ -164,6 +164,8 @@ def clean_user_input(body: LibraryUserInput):
 
 
 def safe_scan_path(value: str) -> str:
+    if value == "/book":
+        return value
     if not value.startswith("/scan/") or value.startswith("//"):
         return "/"
     return value
@@ -398,7 +400,7 @@ async def callback(request: Request, db=Depends(get_db)):
     response = RedirectResponse(frontend_redirect(next_path))
     response.set_cookie(
         "library_session",
-        issue_student(user.id),
+        issue_student(user.id, google_authenticated=True),
         httponly=True,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
@@ -1181,3 +1183,6 @@ async def library_report_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": 'attachment; filename="life-college-library-report.pdf"'},
     )
+
+from app.bookings import router as bookings_router
+app.include_router(bookings_router)

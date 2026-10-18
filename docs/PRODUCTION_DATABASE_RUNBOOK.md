@@ -56,8 +56,13 @@ alembic upgrade head
 alembic current
 ```
 
-The expected migration head is `c31a9e4d27f8`. A failed migration blocks the
-release. Do not seed production data.
+The booking release migration head is `d41a720bc358`. The existing production
+baseline is `c28f9e031bd5`; the booking tables follow it without rewriting any
+previously deployed migration. A failed migration blocks the release.
+The new migration initializes only the seven real resources (four Nap Pods,
+two Collaboration Rooms, one computer). It does not create demo users or bookings.
+Before migrations, create and verify an available RDS snapshot. Do not run the
+local demo-booking seed script in production.
 
 ## 4. Create the first Librarian
 

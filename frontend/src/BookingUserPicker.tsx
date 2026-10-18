@@ -1,0 +1,10 @@
+import React from 'react'
+import {Search, X} from 'lucide-react'
+import {apiRequest, ApiUser, Page, displayUserType} from './api'
+
+export default function BookingUserPicker({value,onSelect}:{value:ApiUser|null;onSelect:(value:ApiUser|null)=>void}){
+ const[q,setQ]=React.useState(''),[rows,setRows]=React.useState<ApiUser[]>([]),[loading,setLoading]=React.useState(false),[error,setError]=React.useState('')
+ React.useEffect(()=>{if(value)return;const controller=new AbortController();setLoading(true);const timer=setTimeout(()=>{apiRequest<Page<ApiUser>>('/api/library/users?'+new URLSearchParams({q,status:'active',page_size:'10'}),{signal:controller.signal}).then(body=>{setRows(body.items);setError('')}).catch(reason=>{if(!controller.signal.aborted)setError(reason.message)}).finally(()=>{if(!controller.signal.aborted)setLoading(false)})},200);return()=>{clearTimeout(timer);controller.abort()}},[q,value])
+ if(value)return <div className="booking-picked-user"><div><strong>{value.name}</strong><small>{value.display_number??value.number} · {displayUserType(value.user_type)}</small><small>{[value.program||value.department||value.organization,value.year_level,value.section].filter(Boolean).join(' · ')}</small></div><button type="button" className="icon-button" title="Change user" aria-label="Change selected library user" onClick={()=>onSelect(null)}><X size={18}/></button></div>
+ return <div className="booking-user-search"><label><span>Library user</span><span className="module-search"><Search size={17}/><input value={q} onChange={event=>setQ(event.target.value)} placeholder="Search name, number, or email" autoComplete="off"/></span></label>{error&&<p role="alert">{error}</p>}{loading?<p role="status">Searching library users...</p>:<div className="booking-user-results">{rows.map(user=><button type="button" key={user.number} onClick={()=>onSelect(user)}><strong>{user.name}</strong><small>{user.display_number??user.number} · {displayUserType(user.user_type)}</small></button>)}{!rows.length&&<p>No active users found.</p>}</div>}</div>
+}

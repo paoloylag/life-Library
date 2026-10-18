@@ -246,7 +246,24 @@ credentials, or private keys are stored as `[REDACTED]`.
 The complete settings schema is available interactively in Swagger at
 `http://127.0.0.1:8000/docs` under `LibrarySettings`.
 
-## Common Responses
+## Resource Bookings
+
+See [Booking Module](BOOKING_MODULE.md) for rules and permissions.
+
+| Method | API path | Purpose |
+| --- | --- | --- |
+| GET | `/api/bookings/identity` | Google-authenticated student/staff eligibility |
+| GET | `/api/bookings/availability` | Free intervals within booking hours |
+| GET/POST | `/api/bookings` | Booking history / create reservation |
+| POST | `/api/bookings/{id}/extend` | Extend eligible active session |
+| POST | `/api/bookings/{id}/end` | End active session early |
+| POST | `/api/bookings/{id}/cancel` | Cancel own or staff-managed upcoming reservation |
+| GET/POST | `/api/bookings/resources` | Staff inventory / create resource |
+| PUT | `/api/bookings/resources/{id}` | Librarian policy update |
+| GET/POST | `/api/bookings/resource-types` | Authenticated type list / librarian type creation |
+| GET | `/api/bookings/reports/usage` | Staff usage summaries |
+
+## Response Codes
 
 - `204`: login or logout completed without a response body
 - `401`: authentication is missing or invalid

@@ -107,3 +107,33 @@ class LibrarySettingsAudit(Base):
     before_values: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     after_values: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class BookingResourceType(Base):
+    __tablename__ = "booking_resource_types"
+    kind: Mapped[str] = mapped_column(String(30), primary_key=True)
+    label: Mapped[str] = mapped_column(String(120), unique=True)
+
+
+class BookingResource(Base):
+    __tablename__ = "booking_resources"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    duration_minutes: Mapped[int] = mapped_column()
+    max_minutes: Mapped[int] = mapped_column()
+    capacity: Mapped[int] = mapped_column(default=1)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class FacilityBooking(Base):
+    __tablename__ = "facility_bookings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    resource_id: Mapped[int] = mapped_column(ForeignKey("booking_resources.id"), index=True)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    participants: Mapped[list] = mapped_column(JSON)
+    source: Mapped[str] = mapped_column(String(20))
+    actions: Mapped[list] = mapped_column(JSON)

@@ -123,3 +123,11 @@ provide credentials to Python code inside the container.
 4. Confirm the displayed QR Test Student identity and select **Record library check-in**.
 
 The local test account is available only when `APP_ENV=local`. Production builds do not show it. The current daily QR is issued by FastAPI, stored as a hash, expires at midnight in `Asia/Manila`, and survives browser refreshes.
+
+## Facility bookings
+
+The built-in booking module supports Nap Pods, Collaboration Rooms, computers,
+manual librarian encoding, session controls, and facility usage summaries.
+See [BOOKING_MODULE.md](docs/BOOKING_MODULE.md) for current rules, API routes,
+migration order, and the production release checklist. Google Calendar is not
+included in this release.

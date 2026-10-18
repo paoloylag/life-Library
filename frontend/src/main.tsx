@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import Reports from "./Reports";
+import Bookings from "./Bookings";
 import Students, { StudentDetail } from "./Students";
 import Attendance from "./Attendance";
 import StaffAccounts from "./StaffAccounts";
@@ -92,6 +93,7 @@ const navigation = [
     items: [
       { label: "Dashboard", path: "/", icon: LayoutDashboard },
       { label: "Attendance", path: "/attendance", icon: Clock3 },
+{ label: "Bookings", path: "/bookings", icon: Clock3 },
       { label: "Library Users", path: "/students", icon: Users },
       { label: "Reports", path: "/reports", icon: BarChart3 },
     ],
@@ -143,6 +145,7 @@ function App() {
     setDrawer(false);
   }
   if (path.startsWith("/scan/")) return <ScanPage />;
+if (path === "/book") return <div className="booking-public"><Bookings /></div>;
   if (authLoading) return <main className="librarian-login"><p role="status">Checking librarian session...</p></main>;
   if (!librarian) return <LoginPage onLogin={setLibrarian} />;
   if (librarian.role === "qr_display")
@@ -150,7 +153,7 @@ function App() {
   if (path === "/qr-display")
     return librarian.role === "auditor" ? <main className="librarian-login"><p>QR display requires librarian access.</p><button onClick={() => navigate("/")}>Dashboard</button></main> : <QrDisplay close={() => navigate("/")} />;
   const title =
-    path === "/reports"
+    path === "/bookings/manual" ? "Manual Booking" : path === "/bookings" ? "Bookings" : path === "/reports"
       ? "Reports"
       : path === "/attendance"
         ? "Attendance"
@@ -169,7 +172,7 @@ function App() {
       <div className="lifeos-workspace">
         <Topbar title={title} open={() => setDrawer(true)} />
         <main className="lifeos-content">
-          {path === "/reports" ? (
+          {path === "/bookings/manual" ? (librarian.role === "auditor" ? <p role="alert">Librarian access is required to create bookings.</p> : <Bookings key="manual" admin manual />) : path === "/bookings" ? (<Bookings key="overview" admin editable={librarian.role !== "auditor"} manageResources={librarian.role === "librarian"} />) : path === "/reports" ? (
             <Reports />
           ) : path.startsWith("/students/") ? (
             <StudentDetail
