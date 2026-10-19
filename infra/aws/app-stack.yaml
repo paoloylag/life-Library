@@ -23,6 +23,11 @@ Parameters:
   GoogleDelegatedAdmin:
     Type: String
     Default: dt@life.edu.ph
+  GoogleCalendarEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Requires googleCalendarEncryptionKey in the application secret before enabling
   CloudFrontOriginPrefixListId:
     Type: String
     Description: ID of the com.amazonaws.global.cloudfront.origin-facing managed prefix list
@@ -48,6 +53,7 @@ Parameters:
 
 Conditions:
   IsProduction: !Equals [!Ref Environment, production]
+  CalendarEnabled: !Equals [!Ref GoogleCalendarEnabled, 'true']
 
 Resources:
   AlbSecurityGroup:
@@ -212,6 +218,8 @@ Resources:
             - {Name: DATABASE_NAME, Value: library_attendance}
             - {Name: GOOGLE_REDIRECT_URI, Value: !Sub 'https://${DomainName}/api/auth/google/callback'}
             - {Name: GOOGLE_ALLOWED_DOMAIN, Value: life.edu.ph}
+            - {Name: GOOGLE_CALENDAR_ENABLED, Value: !Ref GoogleCalendarEnabled}
+            - {Name: GOOGLE_CALENDAR_REDIRECT_URI, Value: !Sub 'https://${DomainName}/api/calendar/callback'}
             - {Name: FRONTEND_URL, Value: !Sub 'https://${DomainName}'}
             - {Name: FRONTEND_ORIGINS, Value: !Sub 'https://${DomainName}'}
             - {Name: COOKIE_SECURE, Value: 'true'}
@@ -231,6 +239,11 @@ Resources:
               ValueFrom: !Sub '${ApplicationSecrets}:googleClientId::'
             - Name: GOOGLE_CLIENT_SECRET
               ValueFrom: !Sub '${ApplicationSecrets}:googleClientSecret::'
+            - !If
+              - CalendarEnabled
+              - Name: GOOGLE_CALENDAR_ENCRYPTION_KEY
+                ValueFrom: !Sub '${ApplicationSecrets}:googleCalendarEncryptionKey::'
+              - !Ref AWS::NoValue
           LogConfiguration:
             LogDriver: awslogs
             Options:

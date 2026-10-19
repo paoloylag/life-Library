@@ -143,3 +143,24 @@ class FacilityBooking(Base):
     participants: Mapped[list] = mapped_column(JSON)
     source: Mapped[str] = mapped_column(String(20))
     actions: Mapped[list] = mapped_column(JSON)
+
+
+class GoogleCalendarConnection(Base):
+    __tablename__ = "google_calendar_connections"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    email: Mapped[str] = mapped_column(String(255))
+    refresh_token_encrypted: Mapped[str] = mapped_column(Text)
+    needs_reconnect: Mapped[bool] = mapped_column(Boolean, default=False)
+    connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class BookingCalendarSync(Base):
+    __tablename__ = "booking_calendar_sync"
+    booking_id: Mapped[int] = mapped_column(ForeignKey("facility_bookings.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    state: Mapped[str] = mapped_column(String(20), default="pending")
+    attempts: Mapped[int] = mapped_column(default=0)
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    event_id: Mapped[str] = mapped_column(String(64))
+    event_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)

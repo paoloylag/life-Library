@@ -72,7 +72,17 @@ jobs:
             del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
                 .compatibilities, .registeredAt, .registeredBy)
             | .containerDefinitions |= map(
-                if .name == $container then .image = $image else . end
+                if .name == $container then
+                  .image = $image
+                  | (.secrets[] | select(.name == "GOOGLE_CLIENT_ID") | .valueFrom
+                      | sub(":googleClientId::$"; "")) as $appSecret
+                  | .environment = ((.environment // [] | map(select(
+                      .name != "GOOGLE_CALENDAR_ENABLED" and .name != "GOOGLE_CALENDAR_REDIRECT_URI")))
+                      + [{name:"GOOGLE_CALENDAR_ENABLED",value:"true"},
+                         {name:"GOOGLE_CALENDAR_REDIRECT_URI",value:"https://library.life.edu.ph/api/calendar/callback"}])
+                  | .secrets = ((.secrets | map(select(.name != "GOOGLE_CALENDAR_ENCRYPTION_KEY")))
+                      + [{name:"GOOGLE_CALENDAR_ENCRYPTION_KEY",valueFrom:($appSecret + ":googleCalendarEncryptionKey::")}])
+                else . end
               )
           ' task-definition.json > release-task-definition.json
           RELEASE_TASK_DEFINITION=$(aws ecs register-task-definition \

@@ -1,0 +1,13 @@
+.access-denied{min-height:100dvh;padding:24px;color:var(--text);background:var(--bg)}
+.access-denied.dark{--bg:#111318;--panel:#191d25;--text:#f8fafc;--muted:#a5adba;--line:rgba(248,250,252,.14)}
+.access-denied>header{display:flex;align-items:center;gap:12px;max-width:1040px;margin:auto;font-size:15px}
+.access-denied>header img{width:48px;height:48px;object-fit:contain;background:white;border-radius:6px}
+.access-denied>section{max-width:540px;margin:96px auto 40px}
+.access-denied>section>svg{color:var(--crimson);margin-bottom:16px}
+.access-denied h1{font:700 36px/1.2 'Crimson Pro',Georgia,serif;margin:10px 0 18px;color:var(--text)}
+.access-denied h1:focus{outline:none}
+.access-denied p:not(.eyebrow){font-size:15px;line-height:1.7;color:var(--muted)}
+.access-denied nav{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0}
+.access-denied nav a{width:auto;min-height:44px;gap:8px;text-decoration:none}
+.access-denied .access-denied-help{font-size:13px!important;border-top:1px solid var(--line);padding-top:20px}
+@media(max-width:480px){.access-denied{padding:20px}.access-denied>section{margin-top:64px}.access-denied nav{display:grid;grid-template-columns:1fr}.access-denied nav a{width:100%}}

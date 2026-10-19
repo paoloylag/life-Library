@@ -1,0 +1,10 @@
+{
+  "FromEmailAddress": "Life College Library <library@life.edu.ph>",
+  "Destination": {"ToAddresses": ["success@simulator.amazonses.com"]},
+  "Content": {"Simple": {
+    "Subject": {"Data": "Library SES infrastructure verification", "Charset": "UTF-8"},
+    "Body": {"Text": {"Data": "SES configuration verification only. This is not a real booking notification.", "Charset": "UTF-8"}}
+  }},
+  "ConfigurationSetName": "life-library-production-bookings",
+  "EmailTags": [{"Name": "application", "Value": "life-library"}, {"Name": "purpose", "Value": "infrastructure-test"}]
+}

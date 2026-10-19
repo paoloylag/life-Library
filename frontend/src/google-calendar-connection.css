@@ -1,0 +1,17 @@
+.booking-user-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);align-items:start;gap:24px;margin-bottom:20px}
+.booking-user-heading>.module-heading{display:flex;flex-direction:column;align-items:flex-start;gap:16px;min-width:0;margin:0}
+.booking-user-heading .booking-user-identity{margin-top:12px;color:var(--text);font-size:13px}
+.booking-user-heading .booking-header-actions{width:auto}
+.calendar-connection{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:14px;margin:0;color:var(--text);min-width:0}
+.calendar-connection-heading{display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:10px}
+.calendar-connection-heading>svg{color:var(--teal);flex:none}
+.calendar-connection-heading>div:first-of-type{min-width:0;flex:1}
+.calendar-connection-heading strong,.calendar-connection-heading span{display:block;overflow-wrap:anywhere;font-size:13px}
+.calendar-connection-heading span{color:var(--muted);margin-top:4px}
+.calendar-connection-actions{display:flex;gap:8px;flex-wrap:wrap}
+.calendar-connection-actions:has(.secondary-button){grid-column:2/-1}
+.calendar-connection-actions .secondary-button{width:100%;font-size:12px}
+.calendar-connection p{font-size:12px;line-height:1.5;margin:10px 0 0}
+.calendar-connection-message{color:var(--muted);font-size:13px}
+.calendar-connection-failure{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:700px){.booking-user-heading{grid-template-columns:minmax(0,1fr);gap:16px}}

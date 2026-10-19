@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Isolated SES sending and delivery feedback for Library booking notifications
+Parameters:
+  ApplicationRoleName:
+    Type: String
+  SenderAddress:
+    Type: String
+    Default: library@life.edu.ph
+    AllowedValues: [library@life.edu.ph]
+  VerifiedDomain:
+    Type: String
+    Default: life.edu.ph
+    AllowedValues: [life.edu.ph]
+Resources:
+  BookingEmails:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      Name: life-library-production-bookings
+      SendingOptions:
+        SendingEnabled: true
+      ReputationOptions:
+        ReputationMetricsEnabled: true
+      SuppressionOptions:
+        SuppressedReasons: [BOUNCE, COMPLAINT]
+      Tags:
+        - Key: Application
+          Value: life-library
+        - Key: Environment
+          Value: production
+  FeedbackTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: life-library-production-email-events
+  FeedbackTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: [!Ref FeedbackTopic]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: ses.amazonaws.com}
+            Action: sns:Publish
+            Resource: !Ref FeedbackTopic
+            Condition:
+              StringEquals:
+                AWS:SourceAccount: !Ref AWS::AccountId
+                AWS:SourceArn: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${BookingEmails}'
+  FeedbackQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: life-library-production-email-events
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600
+      VisibilityTimeout: 60
+      ReceiveMessageWaitTimeSeconds: 20
+  FeedbackQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref FeedbackQueue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: sns.amazonaws.com}
+            Action: sqs:SendMessage
+            Resource: !GetAtt FeedbackQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref FeedbackTopic
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+          - Effect: Deny
+            Principal: '*'
+            Action: sqs:*
+            Resource: !GetAtt FeedbackQueue.Arn
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+  FeedbackSubscription:
+    Type: AWS::SNS::Subscription
+    DependsOn: FeedbackQueuePolicy
+    Properties:
+      TopicArn: !Ref FeedbackTopic
+      Protocol: sqs
+      Endpoint: !GetAtt FeedbackQueue.Arn
+      RawMessageDelivery: true
+  EventDestination:
+    Type: AWS::SES::ConfigurationSetEventDestination
+    DependsOn: [FeedbackTopicPolicy, FeedbackSubscription]
+    Properties:
+      ConfigurationSetName: !Ref BookingEmails
+      EventDestination:
+        Name: library-booking-feedback
+        Enabled: true
+        MatchingEventTypes: [SEND, REJECT, BOUNCE, COMPLAINT, DELIVERY, RENDERING_FAILURE, DELIVERY_DELAY]
+        SnsDestination:
+          TopicARN: !Ref FeedbackTopic
+  ApplicationEmailPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: LibraryBookingEmail
+      Roles: [!Ref ApplicationRoleName]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: SendLibraryBookingEmails
+            Effect: Allow
+            Action: ses:SendEmail
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${VerifiedDomain}'
+              - !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${BookingEmails}'
+            Condition:
+              StringEquals:
+                ses:FromAddress: !Ref SenderAddress
+                aws:RequestedRegion: !Ref AWS::Region
+          - Sid: ReadLibraryEmailFeedback
+            Effect: Allow
+            Action: [sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes, sqs:ChangeMessageVisibility]
+            Resource: !GetAtt FeedbackQueue.Arn
+Outputs:
+  SenderAddress:
+    Value: !Ref SenderAddress
+  SESRegion:
+    Value: !Ref AWS::Region
+  ConfigurationSetName:
+    Value: !Ref BookingEmails
+  FeedbackQueueUrl:
+    Value: !Ref FeedbackQueue
+  FeedbackQueueArn:
+    Value: !GetAtt FeedbackQueue.Arn
+  FeedbackTopicArn:
+    Value: !Ref FeedbackTopic

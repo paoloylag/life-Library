@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
     google_allowed_domain: str = "life.edu.ph"
+    google_calendar_enabled: bool = False
+    google_calendar_redirect_uri: str = "http://127.0.0.1:8001/api/calendar/callback"
+    google_calendar_encryption_key: str = ""
     google_service_account_file: str = ""
     google_service_account_secret_id: str = ""
     aws_region: str = ""
@@ -62,6 +65,21 @@ class Settings(BaseSettings):
             )
         if not self.cookie_secure:
             raise RuntimeError("Production requires COOKIE_SECURE=true")
+        if self.google_calendar_enabled:
+            from cryptography.fernet import Fernet
+            from urllib.parse import urlsplit
+
+            try:
+                Fernet(self.google_calendar_encryption_key.encode())
+            except (ValueError, TypeError) as exc:
+                raise RuntimeError("Calendar requires a valid dedicated encryption key") from exc
+            frontend = urlsplit(self.frontend_url)
+            callback = urlsplit(self.google_calendar_redirect_uri)
+            if (not self.google_client_id or not self.google_client_secret
+                    or frontend.scheme != "https" or callback.scheme != "https"
+                    or callback.netloc != frontend.netloc
+                    or callback.path != "/api/calendar/callback"):
+                raise RuntimeError("Calendar requires OAuth credentials and a same-origin HTTPS callback")
 
     @property
     def allowed_frontend_origins(self) -> list[str]:

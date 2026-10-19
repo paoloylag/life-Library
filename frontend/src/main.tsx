@@ -22,6 +22,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import Reports from "./Reports";
 import Bookings from "./Bookings";
+import AccessDenied from "./AccessDenied";
 import GuidelinePage from "./GuidelinePage";
 import Students, { StudentDetail } from "./Students";
 import Attendance from "./Attendance";
@@ -146,10 +147,14 @@ function App() {
     setDrawer(false);
   }
   if (path.startsWith("/scan/")) return <ScanPage />;
-if (path === "/book") return <div className="booking-public"><Bookings /></div>;
+if (path === "/book") return <div className="booking-public"><Bookings initialTab={new URLSearchParams(location.search).get('view')==='history'?'history':'book'} dashboardAccess={Boolean(librarian&&['librarian','librarian_associate','auditor'].includes(librarian.role))} /></div>;
   if (path === "/" && !authLoading && !librarian) return <div className="booking-public"><Bookings initialTab="history" /></div>;
   if (authLoading) return <main className="librarian-login"><p role="status">Checking librarian session...</p></main>;
-  if (!librarian) return <><LoginPage onLogin={session=>{setLibrarian(session);navigate('/')}} /><p style={{textAlign:'center'}}><a href={href('/')}>Back to user bookings</a></p></>;
+  if (!librarian) return path==='/staff'?<><LoginPage onLogin={session=>{setLibrarian(session);navigate('/')}} /><p style={{textAlign:'center'}}><a href={href('/')}>Back to user bookings</a></p></>:<AccessDenied dark={dark}/>;
+  const forbidden=(librarian.role==='qr_display'&&!['/','/staff','/qr-display'].includes(path))
+    ||(path==='/settings'&&librarian.role!=='librarian')
+    ||(['/accounts','/bookings/manual','/qr-display'].includes(path)&&librarian.role==='auditor');
+  if(forbidden)return <AccessDenied staff qrDisplay={librarian.role==='qr_display'} dark={dark}/>;
   if (librarian.role === "qr_display")
     return <QrDisplay close={logout} closeLabel="Sign out" />;
   if (path === "/qr-display")

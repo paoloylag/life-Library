@@ -23,6 +23,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 from app.library_settings import read_library_settings
 from app.booking_guidelines import GUIDELINES, guideline
+from app.calendar_sync import queue_booking
 
 router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 # PostgreSQL resource row locks serialize across workers; this also covers local SQLite.
@@ -617,6 +618,7 @@ async def create(body: BookingInput, request: Request, db=Depends(get_db)):
                 "organizer_user_id": participants[0].get('user_id'),
                 "organizer_name": participants[0]['name'],
             }]
+        await queue_booking(db, b)
         await db.commit()
         return await serialize(b, r, booked, timestamp, db)
 
@@ -663,6 +665,7 @@ async def change(booking_id, request, db, minutes=None, cancel=False):
                 raise HTTPException(409, "Only upcoming bookings can be cancelled. Use End Session for an in-progress booking.")
             b.ended_at = timestamp
             b.actions = [*b.actions, {"action": "cancelled", "actor": f"{source}:{person.id}", "at": timestamp.isoformat()}]
+            await queue_booking(db, b)
             await db.commit()
             return await serialize(b, r, await rows(db, r.id), timestamp, db)
         if b.ended_at or not start <= timestamp < end:
@@ -690,6 +693,7 @@ async def change(booking_id, request, db, minutes=None, cancel=False):
                 "at": timestamp.isoformat(),
             },
         ]
+        await queue_booking(db, b)
         await db.commit()
         return await serialize(b, r, booked, timestamp, db)
 

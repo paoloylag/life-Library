@@ -1,0 +1,17 @@
+.booking-page,.booking-signin{--brand-sand:#e2cfb3}
+.booking-availability{display:inline-flex;align-items:center;width:fit-content;max-width:100%;padding:7px 10px;border-radius:6px;font-size:12px;line-height:1.5}
+.booking-availability[data-available="true"]{background:color-mix(in srgb,var(--brand-sand) 12%,var(--panel));color:var(--text)}
+.booking-availability[data-available="false"]{background:color-mix(in srgb,var(--crimson) 9%,var(--panel));color:var(--text)}
+.booking-state{display:inline-block;padding:5px 9px;border-radius:5px;font-size:12px;font-weight:600;line-height:1.4;background:color-mix(in srgb,var(--muted) 10%,var(--panel));color:var(--text)}
+.booking-state[data-status="in_progress"]{background:color-mix(in srgb,var(--brand-sand) 14%,var(--panel));color:var(--text)}
+.booking-state[data-status="upcoming"]{background:color-mix(in srgb,var(--crimson) 9%,var(--panel));color:var(--text);border-left:2px solid var(--crimson)}
+.booking-page .calendar-connection{border-top:3px solid var(--brand-sand);background:color-mix(in srgb,var(--brand-sand) 4%,var(--panel))}
+.booking-page .booking-time-summary,.booking-page .booking-id-instructions{background:color-mix(in srgb,var(--brand-sand) 7%,var(--panel))}
+.booking-page .booking-receipt{border-top:3px solid var(--brand-sand)}
+.booking-page .booking-status-tabs button[aria-selected="true"] .booking-status-count{background:color-mix(in srgb,var(--brand-sand) 18%,var(--panel));color:var(--text)}
+.booking-page .booking-resource-tabs button[aria-selected="true"]{background:color-mix(in srgb,var(--brand-sand) 30%,var(--panel));border-bottom-color:color-mix(in srgb,var(--brand-sand) 55%,var(--text));color:var(--text)}
+.booking-page .secondary-button{background:color-mix(in srgb,var(--brand-sand) 22%,var(--panel));color:var(--text)}
+.booking-page .secondary-button:hover:not(:disabled){background:color-mix(in srgb,var(--brand-sand) 38%,var(--panel))}
+.booking-page .calendar-connection-heading>svg{color:color-mix(in srgb,var(--brand-sand) 45%,var(--text))}
+.booking-page .booking-id-instructions,.booking-page .booking-time-summary{border-left-color:var(--brand-sand)}
+.booking-page .booking-resource-tabs button:focus-visible,.booking-page .secondary-button:focus-visible{outline:2px solid var(--maroon);outline-offset:2px}

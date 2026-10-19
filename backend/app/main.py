@@ -240,6 +240,8 @@ app = FastAPI(title="Library Attendance API")
 app.include_router(alternate_email_router)
 from app.staff_google import router as staff_google_router
 app.include_router(staff_google_router)
+from app.calendar_sync import router as calendar_router, configured as calendar_configured, worker as calendar_worker
+app.include_router(calendar_router)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
@@ -271,6 +273,19 @@ async def startup() -> None:
     if dev_accounts_enabled():
         async with SessionLocal() as db:
             await seed_dev_librarians(db)
+    if calendar_configured():
+        app.state.calendar_worker = asyncio.create_task(calendar_worker())
+
+
+@app.on_event("shutdown")
+async def stop_calendar_worker():
+    task = getattr(app.state, "calendar_worker", None)
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 @app.get("/api/health")
