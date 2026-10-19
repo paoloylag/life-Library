@@ -1,0 +1,11 @@
+.guideline-page{min-height:100vh;background:var(--bg,#f5f6f7);color:var(--text,#202124)}
+.guideline-page header{padding:20px 24px;border-bottom:1px solid #dce0e4}
+.guideline-page header a{display:flex;align-items:center;gap:14px;color:inherit;text-decoration:none;font-weight:700}
+.guideline-page header img{width:52px;height:52px;object-fit:contain;background:white;border-radius:6px}
+.guideline-page main{max-width:850px;margin:auto;padding:32px 24px 56px}
+.guideline-page h1{font-size:28px;line-height:1.3;margin:0 0 32px;overflow-wrap:break-word}
+.guideline-page h2{font-size:20px;margin:28px 0 16px}
+.guideline-page ol{padding-left:24px}
+.guideline-page li{padding-left:4px;margin-bottom:16px;line-height:1.75}
+.guideline-page a{text-decoration:underline;color:inherit}
+.guideline-page .guideline-book{display:inline-block;margin-top:16px}

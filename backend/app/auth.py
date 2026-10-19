@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.database import get_db
-from app.models import Librarian, User
+from app.models import Librarian, User, StudentProfile, StaffGoogleAccess
 
 student_sessions = URLSafeTimedSerializer(settings.secret_key, salt="student-auth")
 librarian_sessions = URLSafeTimedSerializer(settings.secret_key, salt="librarian-auth")
@@ -59,7 +59,21 @@ async def current_librarian(request: Request, db: Annotated[AsyncSession, Depend
             request.cookies.get("librarian_session", ""), max_age=28800
         )
     except (BadSignature, SignatureExpired):
-        raise HTTPException(401, "Librarian authentication required")
+        try:
+            google = student_sessions.loads(request.cookies.get("library_session", ""), max_age=43200)
+        except (BadSignature, SignatureExpired):
+            raise HTTPException(401, "Librarian authentication required")
+        if google.get("google_authenticated") is not True:
+            raise HTTPException(401, "Google authentication required")
+        linked_id = await db.scalar(
+            select(StaffGoogleAccess.librarian_id)
+            .join(User, User.id == StaffGoogleAccess.user_id)
+            .join(StudentProfile, StudentProfile.user_id == User.id)
+            .where(User.id == google["id"], User.is_active.is_(True), StudentProfile.is_active.is_(True))
+        )
+        if not linked_id:
+            raise HTTPException(401, "No staff access assigned")
+        payload = {"id": linked_id}
     librarian = await db.scalar(
         select(Librarian).where(
             Librarian.id == payload["id"], Librarian.is_active.is_(True)

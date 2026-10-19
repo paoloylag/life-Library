@@ -1,0 +1,6 @@
+export type Guidelines={title:string;version:string;page:number;source:string;contact:string;sections:{title:string;items:string[]}[]}
+
+export default function BookingGuidelines({document,accepted,onChange,manual}:{document:Guidelines|undefined;accepted:boolean;onChange:(value:boolean)=>void;manual:boolean}) {
+ if(!document)return <p role="alert" className="module-error">Booking guidelines are unavailable. Refresh and try again before confirming.</p>
+ return <section className="booking-guidelines" aria-labelledby="booking-guidelines-title"><h3 id="booking-guidelines-title">{document.title}</h3><div className="booking-guidelines-text" tabIndex={0} role="region" aria-label="Booking guideline text">{document.sections.map(section=><section key={section.title}><h4>{section.title}</h4><ol>{section.items.map((text,index)=><li key={index}>{text}</li>)}</ol></section>)}<p>{document.contact}</p></div><label className="booking-guidelines-agreement"><input type="checkbox" required checked={accepted} onChange={event=>onChange(event.target.checked)}/><span>{manual?'I confirm that the booking organizer has read and agreed to these guidelines.':'I have read and agree to these guidelines for this booking.'}</span></label></section>
+}

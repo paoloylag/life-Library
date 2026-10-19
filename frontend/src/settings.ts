@@ -1,5 +1,6 @@
 export type LibrarySettings = {
   libraryName: string; timezone: string; opensAt: string; closesAt: string
+  bookingOpensAt: string; bookingClosesAt: string
   qrExpiryMinutes: number; duplicateWindowMinutes: number
   academicYear: string; semester: string; programs: string[]; sections: string[]
   yearLevels: string[]; departments: string[]; librarians: string[]; visitorFields: string[]
@@ -8,6 +9,7 @@ export type LibrarySettings = {
 }
 export const defaultSettings: LibrarySettings = {
   libraryName:'Life College Library',timezone:'Asia/Manila',opensAt:'07:00',closesAt:'18:00',
+  bookingOpensAt:'06:00',bookingClosesAt:'18:00',
   qrExpiryMinutes:1440,duplicateWindowMinutes:5,academicYear:'2026-2027',semester:'1st Semester',
   programs:['BS-ENTREP','BS-ENTREP-FE','BS-ENTREP-TE','BS-ENTREP-SE','BS-ENTREP-AE','BS-ENTREP-CE'],sections:['1A','1B','2A','2B'],
   yearLevels:['1st Year','2nd Year','3rd Year','4th Year'],departments:['Academic Affairs','Administration','Student Services','Library Services','Finance'],

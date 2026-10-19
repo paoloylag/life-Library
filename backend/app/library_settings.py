@@ -14,6 +14,8 @@ class LibrarySettings(BaseModel):
     timezone: Literal["Asia/Manila", "UTC"] = "Asia/Manila"
     opensAt: str = "07:00"
     closesAt: str = "18:00"
+    bookingOpensAt: str = "06:00"
+    bookingClosesAt: str = "18:00"
     qrExpiryMinutes: int = Field(default=1440, ge=1, le=1440)
     duplicateWindowMinutes: int = Field(default=5, ge=1, le=60)
     academicYear: str = Field(default="2026-2027", max_length=9)
@@ -50,7 +52,7 @@ class LibrarySettings(BaseModel):
             raise ValueError("Room booking link must be an HTTPS URL")
         return value
 
-    @field_validator("opensAt", "closesAt")
+    @field_validator("opensAt", "closesAt", "bookingOpensAt", "bookingClosesAt")
     @classmethod
     def valid_time(cls, value: str) -> str:
         if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
@@ -79,6 +81,8 @@ class LibrarySettings(BaseModel):
     def valid_hours(self):
         if self.opensAt >= self.closesAt:
             raise ValueError("Opening time must be before closing time")
+        if self.bookingOpensAt >= self.bookingClosesAt:
+            raise ValueError("Booking opening time must be before booking closing time")
         return self
 
 

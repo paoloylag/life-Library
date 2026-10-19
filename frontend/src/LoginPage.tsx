@@ -1,6 +1,6 @@
 import React from 'react'
 import {BookOpen, LogIn} from 'lucide-react'
-import {apiRequest} from './api'
+import {apiRequest, API} from './api'
 
 export type LibrarianSession={id:number;name:string;email:string;role:'librarian'|'librarian_associate'|'auditor'|'qr_display'}
 export const staffRoleName=(role:LibrarianSession['role'])=>({librarian:'Librarian',librarian_associate:'Librarian Associate',auditor:'Auditor',qr_display:'QR Display'})[role]
@@ -31,6 +31,7 @@ export default function LoginPage({onLogin}:{onLogin:(session:LibrarianSession)=
  return <main className="librarian-login"><form onSubmit={submit} className="librarian-login-form">
   <div className="librarian-login-brand"><BookOpen size={30}/><span><strong>Life College</strong><small>Library Attendance</small></span></div>
   <h1>Librarian sign-in</h1><p>Sign in to manage library attendance.</p>
+  <button type="button" onClick={()=>location.assign(API+'/api/auth/google?next=/')}>Continue with Google</button>
   <label>Email<input type="email" autoComplete="username" value={email} onChange={event=>setEmail(event.target.value)} required/></label>
   <label>Password<input type="password" autoComplete="current-password" value={password} onChange={event=>setPassword(event.target.value)} required/></label>
   {error&&<p role="alert" className="librarian-login-error">{error}</p>}

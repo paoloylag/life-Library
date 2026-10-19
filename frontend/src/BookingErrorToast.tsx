@@ -1,4 +1,6 @@
 import {useEffect, useRef} from 'react'
+import {createPortal} from 'react-dom'
+import {bookingErrorTitle} from './booking-messages'
 import {AlertCircle, X} from 'lucide-react'
 
 export default function BookingErrorToast({message,onDismiss}:{message:string;onDismiss:()=>void}) {
@@ -10,5 +12,6 @@ export default function BookingErrorToast({message,onDismiss}:{message:string;on
   return()=>window.clearTimeout(timer)
  },[message])
  if(!message)return null
- return <div className="booking-toast-region"><div className="booking-toast booking-error-toast" role="alert"><AlertCircle size={22} aria-hidden="true"/><div><strong>Unable to complete request</strong><span>{message}</span></div><button type="button" className="booking-toast-close" aria-label="Dismiss booking error" title="Dismiss" onClick={onDismiss}><X size={18}/></button></div></div>
+ const container=Array.from(document.querySelectorAll('dialog[open]')).at(-1)||document.body
+ return createPortal(<div className="booking-toast-region"><div className="booking-toast booking-error-toast" role="alert"><AlertCircle size={22} aria-hidden="true"/><div><strong>{bookingErrorTitle(message)}</strong><span>{message}</span></div><button type="button" className="booking-toast-close" aria-label="Dismiss booking error" title="Dismiss" onClick={onDismiss}><X size={18}/></button></div></div>,container)
 }

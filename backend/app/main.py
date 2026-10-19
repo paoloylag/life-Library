@@ -238,6 +238,8 @@ def visit_json(visit: LibraryVisit):
 
 app = FastAPI(title="Library Attendance API")
 app.include_router(alternate_email_router)
+from app.staff_google import router as staff_google_router
+app.include_router(staff_google_router)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
@@ -601,6 +603,7 @@ async def admin_dev_accounts():
 async def admin_logout():
     response = Response(status_code=204)
     response.delete_cookie("librarian_session", path="/")
+    response.delete_cookie("library_session", path="/")
     return response
 
 

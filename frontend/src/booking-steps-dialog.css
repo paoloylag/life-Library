@@ -1,0 +1,8 @@
+dialog.booking-steps-dialog{position:fixed;inset:0;margin:auto;padding:0;width:min(760px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;color:var(--text)}
+.booking-steps-dialog::backdrop{background:rgba(20,22,27,.55);backdrop-filter:blur(3px)}
+.booking-steps-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:1px solid var(--line)}
+.booking-steps-heading h2{margin:0;font-size:22px}
+.booking-steps-heading button{flex:none}
+.booking-steps-dialog form.booking-section{margin:0;border:0;box-shadow:none;border-radius:0;min-width:0;padding:24px}
+.booking-steps-dialog .booking-confirm-actions{position:sticky;bottom:-24px;background:var(--panel);padding:16px 0;margin-bottom:0}
+@media(max-width:600px){.booking-steps-heading{padding:16px}.booking-steps-dialog form.booking-section{padding:16px}.booking-steps-dialog .booking-confirm-actions{bottom:-16px}}

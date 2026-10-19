@@ -17,6 +17,12 @@ class Librarian(Base):
     is_development: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class StaffGoogleAccess(Base):
+    __tablename__ = "staff_google_access"
+    librarian_id: Mapped[int] = mapped_column(ForeignKey("librarians.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)

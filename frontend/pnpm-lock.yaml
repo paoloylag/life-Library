@@ -8,6 +8,21 @@ importers:
 
   .:
     dependencies:
+      '@fullcalendar/core':
+        specifier: 6.1.22
+        version: 6.1.22
+      '@fullcalendar/daygrid':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/luxon3':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)(luxon@3.7.2)
+      '@fullcalendar/react':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@fullcalendar/timegrid':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)
       '@tanstack/react-query':
         specifier: ^5.59.0
         version: 5.102.4(react@19.2.8)
@@ -23,6 +38,9 @@ importers:
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.8)
+      luxon:
+        specifier: ^3.7.2
+        version: 3.7.2
       qrcode.react:
         specifier: ^4.2.0
         version: 4.2.0(react@19.2.8)
@@ -308,6 +326,32 @@ packages:
 
   '@fast-csv/parse@4.3.6':
     resolution: {integrity: sha512-uRsLYksqpbDmWaSmzvJcuApSEe38+6NQZBUsuAyMZKqHxH0g1wcJgsKUvN3WC8tewaqFjBMMGrkHmC+T7k8LvA==}
+
+  '@fullcalendar/core@6.1.22':
+    resolution: {integrity: sha512-ju5PJUE++zr8XXCGtlXlrodF6doUy9BDfzx+VmE0B+XDBM2A5cUi/aU3M1ANfw/StmKhwqew7Ps7bXMiv/JREg==}
+
+  '@fullcalendar/daygrid@6.1.22':
+    resolution: {integrity: sha512-cpom5+bAvsGG5nX+snsCtpMIyyhAr+QlseD9mhz5Vq7rMBTzx43mSkz6IBvQ3vz5h2idbDmT1cggEn/dzZwt9Q==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+
+  '@fullcalendar/luxon3@6.1.22':
+    resolution: {integrity: sha512-or43T5SQAzb3d8U6Th6Q3vclas8rGEYSsJsUohC+jySJyJuqCLcqgW+NnbrSYIYXx3MUUk32h8au+BEjfjuo1A==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+      luxon: ^3.0.0
+
+  '@fullcalendar/react@6.1.22':
+    resolution: {integrity: sha512-H7woM4nhvXjyM4Up2D3iSp5f8o3pRPGkiHRixvxxvIMdSMBxboGTqCI7T/vjnAfz5TCxXdeX5HxmSHeANsa6gg==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+      react: ^16.7.0 || ^17 || ^18 || ^19
+      react-dom: ^16.7.0 || ^17 || ^18 || ^19
+
+  '@fullcalendar/timegrid@6.1.22':
+    resolution: {integrity: sha512-gNMtkXrkfN3iszXty+pYbJwGxcozL0xBVKYmEd1lm0DMEbrffpVJyV+vifmtl/eIbWCNRWrMWUtGLbYy/ukykA==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1003,6 +1047,10 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
 
+  luxon@3.7.2:
+    resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
+    engines: {node: '>=12'}
+
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -1062,6 +1110,9 @@ packages:
   postcss@8.5.26:
     resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
     engines: {node: ^10 || ^12 || >=14}
+
+  preact@10.12.1:
+    resolution: {integrity: sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==}
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -1487,6 +1538,30 @@ snapshots:
       lodash.isnil: 4.0.0
       lodash.isundefined: 3.0.1
       lodash.uniq: 4.5.0
+
+  '@fullcalendar/core@6.1.22':
+    dependencies:
+      preact: 10.12.1
+
+  '@fullcalendar/daygrid@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+
+  '@fullcalendar/luxon3@6.1.22(@fullcalendar/core@6.1.22)(luxon@3.7.2)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      luxon: 3.7.2
+
+  '@fullcalendar/react@6.1.22(@fullcalendar/core@6.1.22)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  '@fullcalendar/timegrid@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      '@fullcalendar/daygrid': 6.1.22(@fullcalendar/core@6.1.22)
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -2114,6 +2189,8 @@ snapshots:
     dependencies:
       react: 19.2.8
 
+  luxon@3.7.2: {}
+
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -2162,6 +2239,8 @@ snapshots:
       nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  preact@10.12.1: {}
 
   process-nextick-args@2.0.1: {}
 

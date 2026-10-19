@@ -1,8 +1,11 @@
 import React from 'react'
+import StaffRolePicker from './StaffRolePicker'
 import {Plus, ShieldCheck, X} from 'lucide-react'
 import {apiRequest} from './api'
 import {staffRoleName} from './LoginPage'
 import type {LibrarianSession} from './LoginPage'
+import BookingUserPicker from './BookingUserPicker'
+import type {ApiUser} from './api'
 
 type Staff = LibrarianSession & {is_active:boolean;is_development:boolean}
 type Role = Staff['role']
@@ -12,11 +15,12 @@ export default function StaffAccounts({current}:{current:LibrarianSession}){
  const[error,setError]=React.useState('')
  const[editing,setEditing]=React.useState<Staff|null|undefined>(undefined)
  const[busy,setBusy]=React.useState(false)
+ const[granting,setGranting]=React.useState(false)
  const roles:Role[]=current.role==='librarian'?['librarian','librarian_associate','auditor','qr_display']:['librarian_associate','auditor','qr_display']
  const load=React.useCallback(()=>apiRequest<{items:Staff[]}>('/api/admin/accounts').then(result=>{setAccounts(result.items);setError('')}).catch(reason=>setError(reason.message)),[])
  React.useEffect(()=>{void load()},[load])
  return <div className="module-stack staff-page">
-  <div className="module-heading"><div><h2>Administration</h2><p>Manage access to the library dashboard.</p></div><button className="manual-button" onClick={()=>setEditing(null)}><Plus size={17}/>Add Account</button></div>
+  <div className="module-heading"><div><h2>Administration</h2><p>Manage access to the library dashboard.</p></div><div className="booking-actions">{current.role==='librarian'&&<button className="secondary-button" onClick={()=>setGranting(true)}><ShieldCheck size={17}/>Grant Google access</button>}<button className="manual-button" onClick={()=>setEditing(null)}><Plus size={17}/>Add Account</button></div></div>
   <section className="panel">
    {error&&<p className="module-error" role="alert">{error}</p>}
    <div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
@@ -24,7 +28,17 @@ export default function StaffAccounts({current}:{current:LibrarianSession}){
    </table></div>
   </section>
   {editing!==undefined&&<StaffEditor account={editing} current={current} roles={roles} busy={busy} setBusy={setBusy} close={()=>setEditing(undefined)} saved={()=>{setEditing(undefined);void load()}}/>}
+  {granting&&<GoogleAccessEditor close={()=>setGranting(false)} saved={()=>{setGranting(false);void load()}}/>}
  </div>
+}
+
+function GoogleAccessEditor({close,saved}:{close:()=>void;saved:()=>void}){
+ const[user,setUser]=React.useState<ApiUser|null>(null)
+ const[role,setRole]=React.useState<Role>('librarian_associate')
+ const[busy,setBusy]=React.useState(false),[error,setError]=React.useState('')
+ const ref=React.useRef<HTMLDialogElement>(null)
+ React.useEffect(()=>{ref.current?.showModal()},[])
+ return <dialog ref={ref} className="manual-modal resource-policy-modal google-access-modal" aria-labelledby="google-access-title" onCancel={event=>{event.preventDefault();if(!busy)close()}}><form onSubmit={async event=>{event.preventDefault();if(!user)return;setBusy(true);setError('');try{await apiRequest('/api/admin/google-access',{method:'POST',body:JSON.stringify({number:user.number,role})});saved()}catch(reason){setError(reason instanceof Error?reason.message:'Unable to grant access')}finally{setBusy(false)}}}><header><div><span className="eyebrow">Staff permissions</span><h3 id="google-access-title">Grant Google access</h3></div><button type="button" className="icon-button" aria-label="Close Google access form" disabled={busy} onClick={close}><X size={18}/></button></header><div className="resource-policy-body"><div className="google-access-user"><span className="google-access-label">Library user</span><BookingUserPicker value={user} onSelect={setUser}/></div><StaffRolePicker value={role} onChange={setRole}/>{error&&<p className="module-error" role="alert">{error}</p>}</div><footer><button type="button" className="secondary-button" disabled={busy} onClick={close}>Cancel</button><button className="primary-button" disabled={busy||!user}>{busy?'Saving...':'Grant access'}</button></footer></form></dialog>
 }
 
 function StaffEditor({account,current,roles,busy,setBusy,close,saved}:{account:Staff|null;current:LibrarianSession;roles:Role[];busy:boolean;setBusy:(value:boolean)=>void;close:()=>void;saved:()=>void}){

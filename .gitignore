@@ -1,4 +1,6 @@
 .env
+.local-secrets/
+client_secret_*.json
 .env.*
 !.env.example
 *service-account*.json

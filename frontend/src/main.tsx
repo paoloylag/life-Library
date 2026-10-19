@@ -22,6 +22,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import Reports from "./Reports";
 import Bookings from "./Bookings";
+import GuidelinePage from "./GuidelinePage";
 import Students, { StudentDetail } from "./Students";
 import Attendance from "./Attendance";
 import StaffAccounts from "./StaffAccounts";
@@ -146,8 +147,9 @@ function App() {
   }
   if (path.startsWith("/scan/")) return <ScanPage />;
 if (path === "/book") return <div className="booking-public"><Bookings /></div>;
+  if (path === "/" && !authLoading && !librarian) return <div className="booking-public"><Bookings initialTab="history" /></div>;
   if (authLoading) return <main className="librarian-login"><p role="status">Checking librarian session...</p></main>;
-  if (!librarian) return <LoginPage onLogin={setLibrarian} />;
+  if (!librarian) return <><LoginPage onLogin={session=>{setLibrarian(session);navigate('/')}} /><p style={{textAlign:'center'}}><a href={href('/')}>Back to user bookings</a></p></>;
   if (librarian.role === "qr_display")
     return <QrDisplay close={logout} closeLabel="Sign out" />;
   if (path === "/qr-display")
@@ -705,6 +707,6 @@ function Placeholder({ title }: { title: string }) {
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    {currentPath().startsWith('/guidelines/') ? <GuidelinePage slug={currentPath().split('/')[2]} /> : <App />}
   </React.StrictMode>,
 );
