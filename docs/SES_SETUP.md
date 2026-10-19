@@ -74,6 +74,12 @@ SQS feedback queue. The initial rollout restricts sends to the approved account
 through `BOOKING_EMAIL_TEST_RECIPIENT`; other recipients are held, not redirected.
 The approved HTML branding is reused with escaped real booking data and live links.
 
+Production verification on October 19 confirmed all five notification types were
+delivered through the deployed outbox and their SES feedback was recorded. Only
+`paolo.ylag@life.edu.ph` received test mail. Temporary test records were removed.
+The normal release clears the recipient restriction for new bookings. Notifications
+held during the restricted rollout are not sent retroactively.
+
 Librarians can review the latest 100 notifications under Reservations > Analytics >
 Email Delivery. Only librarians and associates can resend failed or uncertain
 non-time-sensitive messages. An uncertain result is never retried automatically,
