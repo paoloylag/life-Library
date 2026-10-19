@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     google_calendar_enabled: bool = False
     google_calendar_redirect_uri: str = "http://127.0.0.1:8001/api/calendar/callback"
     google_calendar_encryption_key: str = ""
+    booking_email_enabled: bool = False
+    booking_email_test_recipient: str = ""
+    booking_email_sender: str = "library@life.edu.ph"
+    booking_email_configuration_set: str = "life-library-production-bookings"
+    booking_email_feedback_queue: str = ""
     google_service_account_file: str = ""
     google_service_account_secret_id: str = ""
     aws_region: str = ""
@@ -65,6 +70,15 @@ class Settings(BaseSettings):
             )
         if not self.cookie_secure:
             raise RuntimeError("Production requires COOKIE_SECURE=true")
+        if self.booking_email_enabled:
+            from urllib.parse import urlsplit
+
+            queue = urlsplit(self.booking_email_feedback_queue)
+            if (urlsplit(self.frontend_url).scheme != "https" or not self.aws_region
+                    or self.booking_email_sender != "library@life.edu.ph"
+                    or not self.booking_email_configuration_set
+                    or queue.scheme != "https" or not (queue.hostname or "").endswith(".amazonaws.com")):
+                raise RuntimeError("Booking email requires HTTPS links, the approved sender, an AWS region and an SQS feedback queue")
         if self.google_calendar_enabled:
             from cryptography.fernet import Fernet
             from urllib.parse import urlsplit

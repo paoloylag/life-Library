@@ -172,12 +172,14 @@ async def test_revoked_access_requires_reconnect(auth_context,calendar_config,mo
 @pytest.mark.asyncio
 async def test_booking_routes_queue_calendar_changes(auth_context,calendar_config,monkeypatch):
     from app import bookings
+    from app.models import BookingEmail
     from app.booking_guidelines import GUIDELINES_VERSION
     client,db=auth_context
     user=await setup_user(db,client)
     old=await setup_booking(db,user)
     timestamp=datetime(2026,10,19,6,0,tzinfo=timezone.utc)
     monkeypatch.setattr(bookings,'now',lambda:timestamp)
+    monkeypatch.setattr(settings,'booking_email_enabled',True)
     old.starts_at=timestamp-timedelta(hours=2)
     old.ends_at=timestamp-timedelta(hours=1)
     old.ended_at=old.ends_at
@@ -189,12 +191,15 @@ async def test_booking_routes_queue_calendar_changes(auth_context,calendar_confi
     booking_id=response.json()['id']
     job=await db.get(BookingCalendarSync,booking_id)
     assert job.user_id==user.id and job.state=='pending'
+    assert await db.scalar(select(BookingEmail.id).where(BookingEmail.booking_id==booking_id,BookingEmail.kind=='confirmed'))
     for action,payload in [('extend',{'minutes':45}),('end',None)]:
         job.state='synced'
         await db.commit()
         response=await client.post(f'/api/bookings/{booking_id}/{action}',json=payload,headers=headers)
         assert response.status_code==200,response.text
         assert job.state=='pending'
+        kind='extended' if action=='extend' else 'ended'
+        assert await db.scalar(select(BookingEmail.id).where(BookingEmail.booking_id==booking_id,BookingEmail.kind==kind))
     future=await client.post('/api/bookings',headers=headers,json={**body,'starts_at':(timestamp+timedelta(hours=2)).isoformat()})
     assert future.status_code==200,future.text
     future_id=future.json()['id']
@@ -204,3 +209,4 @@ async def test_booking_routes_queue_calendar_changes(auth_context,calendar_confi
     result=await client.post(f'/api/bookings/{future_id}/cancel',headers=headers)
     assert result.status_code==200,result.text
     assert future_job.state=='pending'
+    assert await db.scalar(select(BookingEmail.id).where(BookingEmail.booking_id==future_id,BookingEmail.kind=='cancelled'))

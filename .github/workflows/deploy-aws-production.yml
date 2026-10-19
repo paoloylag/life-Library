@@ -77,9 +77,15 @@ jobs:
                   | (.secrets[] | select(.name == "GOOGLE_CLIENT_ID") | .valueFrom
                       | sub(":googleClientId::$"; "")) as $appSecret
                   | .environment = ((.environment // [] | map(select(
-                      .name != "GOOGLE_CALENDAR_ENABLED" and .name != "GOOGLE_CALENDAR_REDIRECT_URI")))
+                      .name != "GOOGLE_CALENDAR_ENABLED" and .name != "GOOGLE_CALENDAR_REDIRECT_URI"
+                      and (.name | startswith("BOOKING_EMAIL_") | not))))
                       + [{name:"GOOGLE_CALENDAR_ENABLED",value:"true"},
-                         {name:"GOOGLE_CALENDAR_REDIRECT_URI",value:"https://library.life.edu.ph/api/calendar/callback"}])
+                         {name:"GOOGLE_CALENDAR_REDIRECT_URI",value:"https://library.life.edu.ph/api/calendar/callback"},
+                         {name:"BOOKING_EMAIL_ENABLED",value:"true"},
+                         {name:"BOOKING_EMAIL_TEST_RECIPIENT",value:"paolo.ylag@life.edu.ph"},
+                         {name:"BOOKING_EMAIL_SENDER",value:"library@life.edu.ph"},
+                         {name:"BOOKING_EMAIL_CONFIGURATION_SET",value:"life-library-production-bookings"},
+                         {name:"BOOKING_EMAIL_FEEDBACK_QUEUE",value:"https://sqs.ap-southeast-1.amazonaws.com/165115313524/life-library-production-email-events"}])
                   | .secrets = ((.secrets | map(select(.name != "GOOGLE_CALENDAR_ENCRYPTION_KEY")))
                       + [{name:"GOOGLE_CALENDAR_ENCRYPTION_KEY",valueFrom:($appSecret + ":googleCalendarEncryptionKey::")}])
                 else . end

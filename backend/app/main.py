@@ -242,6 +242,8 @@ from app.staff_google import router as staff_google_router
 app.include_router(staff_google_router)
 from app.calendar_sync import router as calendar_router, configured as calendar_configured, worker as calendar_worker
 app.include_router(calendar_router)
+from app.booking_emails import router as booking_email_router, worker as booking_email_worker
+app.include_router(booking_email_router)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
@@ -275,17 +277,20 @@ async def startup() -> None:
             await seed_dev_librarians(db)
     if calendar_configured():
         app.state.calendar_worker = asyncio.create_task(calendar_worker())
+    if settings.booking_email_enabled:
+        app.state.booking_email_worker = asyncio.create_task(booking_email_worker())
 
 
 @app.on_event("shutdown")
 async def stop_calendar_worker():
-    task = getattr(app.state, "calendar_worker", None)
-    if task:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    for name in ("calendar_worker", "booking_email_worker"):
+        task = getattr(app.state, name, None)
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 @app.get("/api/health")

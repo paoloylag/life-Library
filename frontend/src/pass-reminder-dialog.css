@@ -1,0 +1,9 @@
+dialog.pass-reminder-dialog{position:fixed;inset:0;margin:auto;width:min(520px,calc(100% - 32px));max-height:calc(100dvh - 32px);box-sizing:border-box;overflow:auto;padding:28px;border:1px solid var(--line);border-top:5px solid #690f0d;border-radius:8px;background:var(--panel,#fff);color:var(--text,#17191f)}
+.pass-reminder-dialog::backdrop{background:rgba(20,22,27,.6);backdrop-filter:blur(3px)}
+.pass-reminder-dialog>svg{color:#690f0d}
+.pass-reminder-dialog h2{font-size:26px;line-height:1.25;margin:12px 0 20px}
+.pass-reminder-dialog .pass-reminder-reference{font-size:24px;font-weight:700;line-height:1.3;background:#f2e8dc;padding:16px;margin:0 0 16px;overflow-wrap:anywhere}
+.pass-reminder-dialog #pass-reminder-message{font-size:18px;line-height:1.55;margin:20px 0 12px}
+.pass-reminder-dialog button{width:100%;margin-top:16px;min-height:44px}
+.pass-reminder-dialog p[role=alert]{color:#9e1d20;font-size:14px}
+@media(max-width:480px){dialog.pass-reminder-dialog{padding:22px}.pass-reminder-dialog h2{font-size:24px}}

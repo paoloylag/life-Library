@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 from app.library_settings import read_library_settings
 from app.booking_guidelines import GUIDELINES, guideline
 from app.calendar_sync import queue_booking
+from app.booking_emails import booking_changed
 
 router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 # PostgreSQL resource row locks serialize across workers; this also covers local SQLite.
@@ -326,6 +327,7 @@ async def serialize(b, resource, bookings, timestamp, db):
         "member_names": booking_member_names(b),
         "source": b.source,
         "actions": b.actions,
+        "pass_reminder_acknowledged": any(a.get("action") == "pass_reminder_acknowledged" for a in b.actions),
         "status": "cancelled"
         if is_cancelled(b)
         else "ended"
@@ -619,6 +621,7 @@ async def create(body: BookingInput, request: Request, db=Depends(get_db)):
                 "organizer_name": participants[0]['name'],
             }]
         await queue_booking(db, b)
+        await booking_changed(db, b, "confirmed")
         await db.commit()
         return await serialize(b, r, booked, timestamp, db)
 
@@ -666,6 +669,7 @@ async def change(booking_id, request, db, minutes=None, cancel=False):
             b.ended_at = timestamp
             b.actions = [*b.actions, {"action": "cancelled", "actor": f"{source}:{person.id}", "at": timestamp.isoformat()}]
             await queue_booking(db, b)
+            await booking_changed(db, b, "cancelled")
             await db.commit()
             return await serialize(b, r, await rows(db, r.id), timestamp, db)
         if b.ended_at or not start <= timestamp < end:
@@ -694,8 +698,24 @@ async def change(booking_id, request, db, minutes=None, cancel=False):
             },
         ]
         await queue_booking(db, b)
+        await booking_changed(db, b, "extended" if minutes is not None else "ended")
         await db.commit()
         return await serialize(b, r, booked, timestamp, db)
+
+
+@router.post("/{booking_id}/acknowledge-pass", status_code=204)
+async def acknowledge_pass(booking_id: int, request: Request, db=Depends(get_db)):
+    user = await booking_user(request, db)
+    booking = await db.scalar(select(FacilityBooking).where(FacilityBooking.id == booking_id).with_for_update())
+    if not booking:
+        raise HTTPException(404, "Booking unavailable")
+    organizer_id = booking.owner_id or (booking.participants[0].get("user_id") if booking.participants else None)
+    if organizer_id != user.id:
+        raise HTTPException(403, "You can acknowledge only your own booking")
+    if not any(a.get("action") == "pass_reminder_acknowledged" for a in booking.actions):
+        booking.actions = [*booking.actions, {"action": "pass_reminder_acknowledged",
+            "actor": f"user:{user.id}", "at": now().isoformat()}]
+        await db.commit()
 
 
 @router.post("/{booking_id}/extend")

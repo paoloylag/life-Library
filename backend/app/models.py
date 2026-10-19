@@ -164,3 +164,19 @@ class BookingCalendarSync(Base):
     event_id: Mapped[str] = mapped_column(String(64))
     event_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
+class BookingEmail(Base):
+    __tablename__ = "booking_emails"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    dedupe_key: Mapped[str] = mapped_column(String(160), unique=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("facility_bookings.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    recipient: Mapped[str] = mapped_column(String(255), index=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(30), index=True)
+    attempts: Mapped[int] = mapped_column(default=0)
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    provider_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    last_error: Mapped[str | None] = mapped_column(String(255), nullable=True)

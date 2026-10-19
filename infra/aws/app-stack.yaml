@@ -28,6 +28,16 @@ Parameters:
     Default: 'false'
     AllowedValues: ['true', 'false']
     Description: Requires googleCalendarEncryptionKey in the application secret before enabling
+  BookingEmailEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  BookingEmailTestRecipient:
+    Type: String
+    Default: ''
+  BookingEmailFeedbackQueue:
+    Type: String
+    Default: ''
   CloudFrontOriginPrefixListId:
     Type: String
     Description: ID of the com.amazonaws.global.cloudfront.origin-facing managed prefix list
@@ -220,6 +230,11 @@ Resources:
             - {Name: GOOGLE_ALLOWED_DOMAIN, Value: life.edu.ph}
             - {Name: GOOGLE_CALENDAR_ENABLED, Value: !Ref GoogleCalendarEnabled}
             - {Name: GOOGLE_CALENDAR_REDIRECT_URI, Value: !Sub 'https://${DomainName}/api/calendar/callback'}
+            - {Name: BOOKING_EMAIL_ENABLED, Value: !Ref BookingEmailEnabled}
+            - {Name: BOOKING_EMAIL_TEST_RECIPIENT, Value: !Ref BookingEmailTestRecipient}
+            - {Name: BOOKING_EMAIL_SENDER, Value: 'library@life.edu.ph'}
+            - {Name: BOOKING_EMAIL_CONFIGURATION_SET, Value: !Sub 'life-library-${Environment}-bookings'}
+            - {Name: BOOKING_EMAIL_FEEDBACK_QUEUE, Value: !Ref BookingEmailFeedbackQueue}
             - {Name: FRONTEND_URL, Value: !Sub 'https://${DomainName}'}
             - {Name: FRONTEND_ORIGINS, Value: !Sub 'https://${DomainName}'}
             - {Name: COOKIE_SECURE, Value: 'true'}

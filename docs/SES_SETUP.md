@@ -57,9 +57,9 @@ SES Delivery feedback was confirmed for all five. Sample content was clearly
 marked and no booking records were created or modified. This is the approved
 recipient for further email testing; do not use the real user directory.
 
-## Application integration still required
+## Application integration
 
-This stack does not enable automatic booking emails by itself. Implement:
+The stack alone does not send email. The application now includes:
 
 1. Transactional outbox and background sender with bounded retries.
 2. HTML and plain-text rendering, addressed only to the booker's saved email.
@@ -67,7 +67,27 @@ This stack does not enable automatic booking emails by itself. Implement:
 4. `ConfigurationSetName` and non-PII message tags on every send.
 5. SES message-ID tracking and an idempotent SQS feedback consumer.
 6. Bounce/complaint suppression handling, failure status and librarian resend.
-7. End-to-end inbox tests and a separately reviewed application rollout.
+7. A 15-minute start reminder and a scheduled session-ended notification.
+
+Enable `BOOKING_EMAIL_ENABLED=true` with the SES configuration set and dedicated
+SQS feedback queue. The initial rollout restricts sends to the approved account
+through `BOOKING_EMAIL_TEST_RECIPIENT`; other recipients are held, not redirected.
+The approved HTML branding is reused with escaped real booking data and live links.
+
+Librarians can review the latest 100 notifications under Reservations > Analytics >
+Email Delivery. Only librarians and associates can resend failed or uncertain
+non-time-sensitive messages. An uncertain result is never retried automatically,
+because SES does not provide a send idempotency token. Explicit provider throttling
+and temporary rejection retry up to five times. Bounces and complaints suppress
+future sends. Missing booker email addresses are recorded as skipped.
+
+Only bookings created after enablement are scheduled; no historical email blast
+is performed. Extensions update the pending end reminder, cancellation suppresses
+earlier pending notifications, and early ending brings the end notification forward.
+Late start reminders are skipped. No additional room participant receives mail.
+
+Pass acknowledgement is recorded in the booking action log with the signed-in
+organizer and timestamp. The dialog blocks Escape and outside-click dismissal.
 
 Sending should use the ECS task role and SDK default credential chain, not SMTP
 credentials. Local tests must be explicitly enabled and use AWS simulators or an

@@ -1,0 +1,11 @@
+import React from 'react'
+import {RefreshCw,Send} from 'lucide-react'
+import {apiRequest} from './api'
+type Delivery={id:number;booking_id:number;kind:string;state:string;attempts:number;updated_at:string;last_error:string|null}
+export default function BookingEmailDelivery({canResend}:{canResend:boolean}){
+ const[data,setData]=React.useState<{enabled:boolean;test_recipient:string;items:Delivery[]}|null>(null),[error,setError]=React.useState(''),[busy,setBusy]=React.useState(false)
+ async function load(){try{setData(await apiRequest('/api/bookings/emails'));setError('')}catch{setError('Unable to load email delivery status.')}}
+ React.useEffect(()=>{void load();const timer=setInterval(()=>void load(),60000);return()=>clearInterval(timer)},[])
+ async function resend(id:number){if(!confirm('Resend this email? If its delivery result is unknown, the booker may receive a duplicate.'))return;setBusy(true);try{await apiRequest('/api/bookings/emails/'+id+'/resend',{method:'POST'});await load()}catch(reason){setError(reason instanceof Error?reason.message:'Unable to resend email.')}finally{setBusy(false)}}
+ return <section className="panel booking-section" aria-labelledby="email-delivery-title"><div className="booking-list-heading"><h3 id="email-delivery-title">Email Delivery</h3><button className="icon-button" aria-label="Refresh email delivery" title="Refresh email delivery" onClick={()=>void load()}><RefreshCw size={18}/></button></div>{error&&<p role="alert">{error}</p>}{data&&!data.enabled&&<p>Email delivery is disabled.</p>}{data?.test_recipient&&<p>Test delivery is restricted to {data.test_recipient}.</p>}<div className="table-wrap"><table><thead><tr><th>Reservation</th><th>Notification</th><th>Status</th><th>Attempts</th><th>Action</th></tr></thead><tbody>{data?.items.map(item=><tr key={item.id}><td>#{item.booking_id}</td><td>{item.kind}</td><td>{item.state}{item.last_error&&<small style={{display:'block'}}>{item.last_error}</small>}</td><td>{item.attempts}</td><td>{canResend&&['failed','uncertain'].includes(item.state)&&['confirmed','cancelled','extended'].includes(item.kind)&&<button className="secondary-button" disabled={busy} onClick={()=>void resend(item.id)}><Send size={16}/>Resend</button>}</td></tr>)}</tbody></table></div>{data&&!data.items.length&&<p>No Email Notifications</p>}</section>
+}
