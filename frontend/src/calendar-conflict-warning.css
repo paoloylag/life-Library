@@ -1,0 +1,6 @@
+.calendar-conflict-warning{display:flex;align-items:flex-start;gap:12px;margin:20px 0;padding:16px;border:1px solid #ba8c42;border-left:4px solid #9a671d;border-radius:6px;background:#fff8e8;color:#352817}
+.calendar-conflict-warning>svg{flex:none;margin-top:2px}
+.calendar-conflict-warning>div{min-width:0}
+.calendar-conflict-warning strong{font-size:16px}
+.calendar-conflict-warning p{margin:8px 0 12px;font-size:14px;line-height:1.5;color:inherit}
+.calendar-conflict-warning button{min-height:40px;white-space:normal}

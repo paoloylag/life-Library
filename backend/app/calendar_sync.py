@@ -9,6 +9,7 @@ from authlib.integrations.starlette_client import OAuth
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.auth import current_user, student_sessions
@@ -52,6 +53,60 @@ async def calendar_user(request: Request, db=Depends(get_db)):
     if not user.profile or not user.profile.is_active or user.profile.user_type == "visitor":
         raise HTTPException(403, "Calendar connections require an active school Library User")
     return user
+
+
+class ConflictCheck(BaseModel):
+    resource_id: int = Field(gt=0)
+    starts_at: datetime | None = None
+
+
+@router.post("/conflicts")
+async def conflicts(body: ConflictCheck, user=Depends(calendar_user), db=Depends(get_db)):
+    if not configured():
+        return {"state": "disabled"}
+    connection = await db.get(GoogleCalendarConnection, user.id)
+    if not connection:
+        return {"state": "not_connected"}
+    if connection.needs_reconnect:
+        return {"state": "unavailable"}
+    resource = await db.get(BookingResource, body.resource_id)
+    if not resource or not resource.is_active:
+        raise HTTPException(404, "Resource unavailable")
+    timestamp = datetime.now(timezone.utc)
+    start = body.starts_at or timestamp
+    if start.tzinfo is None:
+        raise HTTPException(422, "Start time must include a timezone")
+    if body.starts_at and not timestamp <= start <= timestamp + timedelta(days=1):
+        raise HTTPException(422, "Choose a booking time within the next 24 hours")
+    end = start + timedelta(minutes=resource.duration_minutes)
+    try:
+        # This is advisory and read-only: never persist personal event data or tokens.
+        async with asyncio.timeout(10), http_client() as client:
+            refresh = cipher().decrypt(connection.refresh_token_encrypted.encode()).decode()
+            token = await client.post("https://oauth2.googleapis.com/token", data={
+                "grant_type": "refresh_token", "refresh_token": refresh,
+                "client_id": settings.google_client_id, "client_secret": settings.google_client_secret})
+            token.raise_for_status()
+            headers = {"Authorization": "Bearer " + token.json()["access_token"]}
+            params = {"timeMin": start.isoformat(), "timeMax": end.isoformat(),
+                "singleEvents": "true", "showDeleted": "false", "maxResults": 250,
+                "fields": "items(status,transparency,attendees(self,responseStatus)),nextPageToken"}
+            for _ in range(10):
+                response = await client.get(EVENTS, headers=headers, params=params)
+                response.raise_for_status()
+                page = response.json()
+                for event in page.get("items", []):
+                    declined = any(a.get("self") and a.get("responseStatus") == "declined"
+                        for a in event.get("attendees", []))
+                    if event.get("status") != "cancelled" and event.get("transparency") != "transparent" and not declined:
+                        return {"state": "conflict"}
+                if not page.get("nextPageToken"):
+                    return {"state": "clear"}
+                params["pageToken"] = page["nextPageToken"]
+    except Exception:
+        # Provider exceptions can contain credentials and private event content.
+        pass
+    return {"state": "unavailable"}
 
 
 @router.get("/status")
