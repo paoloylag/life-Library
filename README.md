@@ -131,3 +131,5 @@ manual librarian encoding, session controls, and facility usage summaries.
 See [BOOKING_MODULE.md](docs/BOOKING_MODULE.md) for current rules, API routes,
 migration order, and the production release checklist. Google Calendar is not
 included in this release.
+
+Backend replacement planning: [Unified attendance API contract](docs/UNIFIED_ATTENDANCE_API_CONTRACT.md) and [OpenAPI specification](docs/library-qr.openapi.json).

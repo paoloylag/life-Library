@@ -1,0 +1,895 @@
+{
+  "components": {
+    "securitySchemes": {
+      "librarySession": {
+        "name": "library_session",
+        "in": "cookie",
+        "type": "apiKey"
+      },
+      "staffSession": {
+        "name": "librarian_session",
+        "in": "cookie",
+        "type": "apiKey"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ]
+      },
+      "GuestInput": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "type": "string",
+            "minLength": 2
+          },
+          "organization": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 180
+          },
+          "purpose": {
+            "maxLength": 180,
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "purpose"
+        ]
+      },
+      "DisplaySettings": {
+        "properties": {
+          "qrHeading": {
+            "type": "string"
+          },
+          "qrInstructions": {
+            "type": "string"
+          },
+          "roomBookingUrl": {
+            "type": "string"
+          },
+          "libraryName": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "qrHeading",
+          "qrInstructions",
+          "roomBookingUrl",
+          "libraryName"
+        ]
+      },
+      "CheckIn": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "check_in",
+              "duplicate"
+            ]
+          },
+          "check_in_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^LC-\\d{8,}$"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "check_in_time",
+          "reference"
+        ]
+      },
+      "Staff": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "librarian",
+              "librarian_associate",
+              "auditor",
+              "qr_display"
+            ]
+          },
+          "id": {
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "role",
+          "id"
+        ]
+      },
+      "Profile": {
+        "properties": {
+          "program": {
+            "type": "string"
+          },
+          "year_level": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "user_type": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program",
+          "year_level",
+          "department",
+          "section",
+          "user_type",
+          "number"
+        ]
+      },
+      "AuthStatus": {
+        "properties": {
+          "allowed_domain": {
+            "type": "string"
+          },
+          "google_configured": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed_domain",
+          "google_configured"
+        ]
+      },
+      "DailySession": {
+        "properties": {
+          "scan_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open"
+            ]
+          },
+          "session_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scan_url",
+          "status",
+          "session_date",
+          "expires_at"
+        ]
+      },
+      "StaffLogin": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "format": "password"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password",
+          "email"
+        ]
+      },
+      "ValidationError": {
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "loc": {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ]
+                  }
+                },
+                "type": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                }
+              },
+              "type": "object",
+              "required": [
+                "loc",
+                "type",
+                "msg"
+              ]
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ]
+      },
+      "Identity": {
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Profile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "avatar_url",
+          "email",
+          "profile",
+          "id",
+          "name"
+        ]
+      },
+      "GuestCheckIn": {
+        "properties": {
+          "user_number": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "check_in"
+            ]
+          },
+          "check_in_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^LC-\\d{8,}$"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_number",
+          "action",
+          "check_in_time",
+          "reference"
+        ]
+      }
+    }
+  },
+  "info": {
+    "version": "1.0.0",
+    "description": "Proposed replacement contract based on life-Library 76a5ec8. Companion UNIFIED_ATTENDANCE_API_CONTRACT.md defines required semantics and retained dependencies. Target not yet implemented.",
+    "title": "Library QR compatibility API"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/auth/logout": {
+      "post": {
+        "responses": {
+          "204": {
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "No content; issue or expire applicable cookies"
+          }
+        },
+        "description": "Clear library_session cookie",
+        "security": [],
+        "summary": "logoutUser",
+        "operationId": "logoutUser"
+      }
+    },
+    "/api/admin/me": {
+      "get": {
+        "responses": {
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 403 error"
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Staff"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 401 error"
+          }
+        },
+        "description": "Google session requires explicit active staff grant",
+        "security": [
+          {
+            "staffSession": []
+          },
+          {
+            "librarySession": []
+          }
+        ],
+        "summary": "getStaff",
+        "operationId": "getStaff"
+      }
+    },
+    "/api/auth/google": {
+      "get": {
+        "responses": {
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Google not configured"
+          },
+          "307": {
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Frontend success or error redirect"
+          },
+          "302": {
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Provider redirect"
+          }
+        },
+        "description": "Browser OAuth redirect. Validate state and verified identity; preserve safe return path. Callback sets HttpOnly library_session for 43200 seconds or redirects with auth_error. See companion contract.",
+        "security": [],
+        "operationId": "beginGoogleLogin",
+        "parameters": [
+          {
+            "name": "next",
+            "in": "query",
+            "description": "Safe /scan/{token} with optional query, /book, or fallback /",
+            "schema": {
+              "type": "string",
+              "default": "/"
+            }
+          }
+        ]
+      }
+    },
+    "/api/auth/google/callback": {
+      "get": {
+        "responses": {
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Google not configured"
+          },
+          "307": {
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Frontend success or error redirect"
+          },
+          "302": {
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Provider redirect"
+          }
+        },
+        "description": "Browser OAuth redirect. Validate state and verified identity; preserve safe return path. Callback sets HttpOnly library_session for 43200 seconds or redirects with auth_error. See companion contract.",
+        "security": [],
+        "operationId": "completeGoogleLogin",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/auth/status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            },
+            "description": "Success"
+          }
+        },
+        "description": "Google configuration status",
+        "security": [],
+        "summary": "getAuthStatus",
+        "operationId": "getAuthStatus"
+      }
+    },
+    "/api/library/sessions": {
+      "post": {
+        "responses": {
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 403 error"
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailySession"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 401 error"
+          }
+        },
+        "description": "Librarian or librarian_associate only; does not force rotation",
+        "security": [
+          {
+            "staffSession": []
+          },
+          {
+            "librarySession": []
+          }
+        ],
+        "summary": "getOrCreateDailySession",
+        "operationId": "getOrCreateDailySession"
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "responses": {
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 401 error"
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            },
+            "description": "Success"
+          }
+        },
+        "description": "Active library user; profile may be null",
+        "security": [
+          {
+            "librarySession": []
+          }
+        ],
+        "summary": "getIdentity",
+        "operationId": "getIdentity"
+      }
+    },
+    "/api/admin/login": {
+      "post": {
+        "responses": {
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 401 error"
+          },
+          "204": {
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "No content; issue or expire applicable cookies"
+          }
+        },
+        "description": "Set HttpOnly librarian_session, lifetime 28800 seconds",
+        "security": [],
+        "summary": "loginStaff",
+        "operationId": "loginStaff",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffLogin"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library/settings/display": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisplaySettings"
+                }
+              }
+            },
+            "description": "Success"
+          }
+        },
+        "description": "Public QR wording and booking URL",
+        "security": [],
+        "summary": "getDisplaySettings",
+        "operationId": "getDisplaySettings"
+      }
+    },
+    "/api/library/scan/{token}/guest": {
+      "post": {
+        "responses": {
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            },
+            "description": "HTTP 422 error"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 409 error"
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestCheckIn"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 410 error"
+          }
+        },
+        "description": "Valid QR required. Creates visitor and visit. No duplicate suppression or retry idempotency.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Opaque daily QR token from scan_url",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "checkInGuest",
+        "operationId": "checkInGuest",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library/sessions/current": {
+      "get": {
+        "responses": {
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 403 error"
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailySession"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 401 error"
+          }
+        },
+        "description": "Librarian, librarian_associate or qr_display only; get or create Manila daily session",
+        "security": [
+          {
+            "staffSession": []
+          },
+          {
+            "librarySession": []
+          }
+        ],
+        "summary": "getCurrentDailySession",
+        "operationId": "getCurrentDailySession"
+      }
+    },
+    "/api/admin/logout": {
+      "post": {
+        "responses": {
+          "204": {
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "No content; issue or expire applicable cookies"
+          }
+        },
+        "description": "Clear both user and staff cookies",
+        "security": [],
+        "summary": "logoutStaff",
+        "operationId": "logoutStaff"
+      }
+    },
+    "/api/library/scan/{token}": {
+      "post": {
+        "responses": {
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 403 error"
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckIn"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 410 error"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "HTTP 401 error"
+          }
+        },
+        "description": "No body. Atomic duplicate detection using configured window. Duplicate returns original time/reference with HTTP 200.",
+        "security": [
+          {
+            "librarySession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Opaque daily QR token from scan_url",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "checkInMember",
+        "operationId": "checkInMember"
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Existing compatibility origin; replacement hosting to be confirmed",
+      "url": "https://library.life.edu.ph"
+    }
+  ]
+}
