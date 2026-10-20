@@ -438,6 +438,8 @@ type DashboardData = {
   visits: ApiVisit[];
 };
 function Dashboard({editable}:{editable:boolean}) {
+  const [activityPage, setActivityPage] = React.useState(1);
+  const activityPageSize = 5;
   const { url, error: qrError, regenerate } = useDailyQr(editable),
     [data, setData] = React.useState<DashboardData>({
       check_in_count: 0,
@@ -461,6 +463,13 @@ function Dashboard({editable}:{editable:boolean}) {
     const timer = setInterval(load, 15000);
     return () => clearInterval(timer);
   }, [load]);
+  const activityPageCount = Math.max(1, Math.ceil(data.visits.length / activityPageSize));
+  const currentActivityPage = Math.min(activityPage, activityPageCount);
+  const activityStart = (currentActivityPage - 1) * activityPageSize;
+  const activityVisits = data.visits.slice(activityStart, activityStart + activityPageSize);
+  React.useEffect(() => {
+    setActivityPage(page => Math.min(page, activityPageCount));
+  }, [activityPageCount]);
   const peak =
     data.peak_hour === null
       ? "-"
@@ -574,7 +583,7 @@ function Dashboard({editable}:{editable:boolean}) {
               </tr>
             </thead>
             <tbody>
-              {data.visits.map((v) => (
+              {activityVisits.map((v) => (
                 <tr key={v.id}>
                   <td>
                     <strong>{v.name}</strong>
@@ -597,6 +606,14 @@ function Dashboard({editable}:{editable:boolean}) {
             <p className="module-state">No check-ins recorded today.</p>
           )}
         </div>
+        {data.visits.length > 0 && <div className="directory-pagination">
+          <span>{activityStart + 1}-{Math.min(activityStart + activityPageSize, data.visits.length)} of {data.visits.length} check-ins</span>
+          <nav aria-label="Today's activity pages">
+            <button type="button" className="secondary-button" disabled={currentActivityPage === 1} onClick={() => setActivityPage(currentActivityPage - 1)}>Previous</button>
+            <span aria-live="polite">Page {currentActivityPage} of {activityPageCount}</span>
+            <button type="button" className="secondary-button" disabled={currentActivityPage === activityPageCount} onClick={() => setActivityPage(currentActivityPage + 1)}>Next</button>
+          </nav>
+        </div>}
       </section>
     </div>
   );
